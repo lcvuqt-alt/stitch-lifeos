@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stitch LifeOS - Hệ điều hành cuộc sống cá nhân</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#a855f7', // Neon Purple
+                        'primary-container': '#6366f1', // Indigo Neon
+                        'on-primary': '#ffffff',
+                        surface: '#faf9ff', // Default Light Base
+                        'surface-container-lowest': '#ffffff',
+                        'surface-container-low': '#f1f3ff',
+                        'surface-container': '#e9edff',
+                        'surface-container-high': '#e1e8ff',
+                        'surface-container-highest': '#d8e2ff',
+                        'on-surface': '#051a3e', // Default dark text
+                        'on-surface-variant': '#434654', // Muted slate text
+                        'outline-variant': '#c3c6d6', // Light border
+                        error: '#f43f5e', // Rose Neon
+                        tertiary: '#06b6d4', // Cyan Neon
+                        'tertiary-container': '#0891b2',
+                        'on-tertiary-container': '#e0f7fa'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    borderRadius: {
+                        DEFAULT: '8px',
+                        'lg': '12px',
+                        'xl': '16px'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(45, 45, 89, 0.2);
+            border-radius: 3px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #2d2d59;
+        }
+        /* Glassmorphism style cards (Light / Dark hybrid) */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .dark .glass-panel {
+            background: rgba(13, 13, 33, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        /* Glass input fields */
+        .glass-input {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #c3c6d6 !important;
+            color: #051a3e !important;
+            transition: all 0.2s ease;
+        }
+        .dark .glass-input {
+            background: rgba(10, 10, 31, 0.5) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            color: #f8fafc !important;
+        }
+        .glass-input:focus {
+            border-color: #a855f7 !important;
+            box-shadow: 0 0 0 1px #a855f7 !important;
+        }
+        /* Dotted paper background for Diary */
+        .journal-paper {
+            background-image: radial-gradient(rgba(0, 0, 0, 0.05) 0.8px, transparent 0.8px);
+            background-size: 24px 24px;
+            background-color: rgba(255, 255, 255, 0.9);
+            transition: background-color 0.3s ease;
+        }
+        .dark .journal-paper {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.07) 0.8px, transparent 0.8px);
+            background-color: rgba(10, 10, 26, 0.8);
+        }
+        /* Ripple effect */
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="overflow-hidden h-screen select-none bg-surface text-on-surface dark:bg-[#03030c] dark:text-[#f8fafc]">
+    <div class="flex h-full w-full overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-surface-container-low dark:bg-[#050512]/90 border-r border-outline-variant dark:border-[#2d2d59] flex flex-col justify-between h-full z-30 shrink-0 transition-colors duration-300">
+            <div>
+                <!-- Brand Logo -->
+                <div class="p-6 flex items-center space-x-3 border-b border-outline-variant dark:border-[#2d2d59]">
+                    <span class="material-symbols-outlined text-transparent bg-clip-text bg-gradient-to-r from-primary to-tertiary text-3xl font-bold">dataset</span>
+                    <div>
+                        <h1 class="text-lg font-black tracking-tight text-on-surface dark:text-[#f8fafc]">LifeOS</h1>
+                        <p class="text-[10px] text-on-surface-variant dark:text-[#94a3b8] font-mono tracking-widest uppercase">Workspace</p>
+                    </div>
+                </div>
+                <!-- Navigation Links -->
+                <nav class="p-4 space-y-1">
+                    <a href="#dashboard" data-route="dashboard" class="nav-item flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 hover:text-on-surface dark:hover:text-[#f8fafc] transition-all active:scale-95">
+                        <span class="material-symbols-outlined">dashboard</span>
+                        <span class="font-medium text-sm">Trang chủ</span>
+                    </a>
+                    <a href="#tasks" data-route="tasks" class="nav-item flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 hover:text-on-surface dark:hover:text-[#f8fafc] transition-all active:scale-95">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        <span class="font-medium text-sm">Công việc</span>
+                    </a>
+                    <a href="#calendar" data-route="calendar" class="nav-item flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 hover:text-on-surface dark:hover:text-[#f8fafc] transition-all active:scale-95">
+                        <span class="material-symbols-outlined">calendar_today</span>
+                        <span class="font-medium text-sm">Lịch cá nhân</span>
+                    </a>
+                    <a href="#diary" data-route="diary" class="nav-item flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 hover:text-on-surface dark:hover:text-[#f8fafc] transition-all active:scale-95">
+                        <span class="material-symbols-outlined">edit_note</span>
+                        <span class="font-medium text-sm">Nhật ký</span>
+                    </a>
+                    <a href="#analytics" data-route="analytics" class="nav-item flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 hover:text-on-surface dark:hover:text-[#f8fafc] transition-all active:scale-95">
+                        <span class="material-symbols-outlined">insights</span>
+                        <span class="font-medium text-sm">Phân tích</span>
+                    </a>
+                    <a href="#workflows" data-route="workflows" class="nav-item flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 hover:text-on-surface dark:hover:text-[#f8fafc] transition-all active:scale-95">
+                        <span class="material-symbols-outlined">account_tree</span>
+                        <span class="font-medium text-sm">Quy trình</span>
+                    </a>
+                    <a href="#ai-assistant" data-route="ai-assistant" class="nav-item flex items-center space-x-3 px-4 py-3 rounded text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 hover:text-on-surface dark:hover:text-[#f8fafc] transition-all active:scale-95">
+                        <span class="material-symbols-outlined">smart_toy</span>
+                        <span class="font-medium text-sm">Trợ lý</span>
+                    </a>
+                </nav>
+            </div>
+            <!-- Sidebar Footer -->
+            <div class="p-4 border-t border-outline-variant dark:border-[#2d2d59] space-y-1">
+                <a href="#help" class="flex items-center space-x-3 px-4 py-2 rounded text-xs text-on-surface-variant dark:text-[#94a3b8] hover:text-on-surface dark:hover:text-[#f8fafc] transition-all">
+                    <span class="material-symbols-outlined text-sm">help</span>
+                    <span>Trợ giúp & Tài liệu</span>
+                </a>
+                <button onclick="resetData()" class="w-full flex items-center space-x-3 px-4 py-2 rounded text-xs text-error hover:bg-red-500/10 transition-all text-left">
+                    <span class="material-symbols-outlined text-sm">restart_alt</span>
+                    <span>Đặt lại dữ liệu</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col h-full overflow-hidden">
+            <!-- Top Header -->
+            <header class="h-16 border-b border-outline-variant dark:border-[#2d2d59] bg-white dark:bg-[#03030c] flex items-center justify-between px-8 shrink-0 transition-colors duration-300">
+                <div class="flex items-center space-x-4 flex-1">
+                    <div class="relative w-80">
+                        <span class="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant dark:text-[#94a3b8] text-lg">search</span>
+                        <input type="text" id="global-search" oninput="handleGlobalSearch(this.value)" placeholder="Tìm số chứng từ, tên công việc..." class="w-full pl-10 pr-4 py-1.5 glass-input rounded-full text-sm focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <!-- Light/Dark Mode Switcher -->
+                    <button onclick="toggleTheme()" class="p-2 border border-outline-variant dark:border-[#2d2d59] rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-on-surface dark:text-on-surface-variant active:scale-90 transition-all flex items-center justify-center" id="theme-toggle-btn">
+                        <span class="material-symbols-outlined text-lg" id="theme-toggle-icon">wb_sunny</span>
+                    </button>
+                    <button onclick="toggleQuickTaskModal()" class="flex items-center space-x-1.5 bg-gradient-to-r from-primary to-primary-container text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-[0_0_12px_rgba(168,85,247,0.3)] hover:brightness-110 active:scale-95 transition-all">
+                        <span class="material-symbols-outlined text-sm font-bold">add</span>
+                        <span>THÊM NHANH</span>
+                    </button>
+                    <!-- Time Widget -->
+                    <div class="text-right">
+                        <p class="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-tertiary" id="current-time">12:00:00</p>
+                        <p class="text-[9px] text-on-surface-variant dark:text-[#94a3b8] font-mono" id="current-date">09/07/2026</p>
+                    </div>
+                    <span class="h-6 w-px bg-outline-variant dark:bg-[#2d2d59]"></span>
+                    <img src="https://lh3.googleusercontent.com/a/default-user" alt="User Avatar" class="w-8 h-8 rounded-full border border-black/10 dark:border-white/10">
+                </div>
+            </header>
+
+            <!-- Views container -->
+            <main class="flex-1 overflow-hidden p-8 bg-surface dark:bg-[#03030c] transition-colors duration-300">
+                
+                <!-- 1. DASHBOARD VIEW -->
+                <section id="view-dashboard" class="view hidden h-full flex flex-col space-y-6 overflow-hidden">
+                    <div class="shrink-0">
+                        <h2 class="text-2xl font-black text-on-surface dark:text-[#f8fafc] tracking-tight" id="dashboard-greeting">Chào buổi chiều!</h2>
+                        <p class="text-sm text-on-surface-variant dark:text-[#94a3b8]">Bảng theo dõi tiến trình vận hành.</p>
+                    </div>
+                    <!-- AI Mini Insight -->
+                    <div class="bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-start space-x-3 shrink-0">
+                        <span class="material-symbols-outlined text-primary">lightbulb</span>
+                        <div>
+                            <h4 class="text-xs font-bold text-primary uppercase tracking-wider font-mono">Gợi ý vận hành</h4>
+                            <p class="text-sm text-on-surface-variant dark:text-[#94a3b8] mt-0.5">Hệ thống ghi nhận các công việc vận hành sắp đến hạn. Hãy hoàn tất khai hải quan cho chứng từ hàng hóa để tránh lưu kho bãi phụ trội.</p>
+                        </div>
+                    </div>
+                    <!-- Stats Cards Grid -->
+                    <div class="grid grid-cols-4 gap-6 shrink-0">
+                        <div class="glass-panel p-4 rounded-xl relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_8px_#a855f7]"></div>
+                            <p class="text-[10px] font-bold text-on-surface-variant dark:text-[#94a3b8] uppercase tracking-wider font-mono">Đang thực hiện</p>
+                            <h3 class="text-2xl font-black mt-1 text-on-surface dark:text-[#f8fafc] font-mono" id="stat-tasks-today">0</h3>
+                            <p class="text-[10px] text-on-surface-variant dark:text-[#94a3b8] mt-0.5">Số lượng công việc hiện hành</p>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 shadow-[0_0_8px_#f97316]"></div>
+                            <p class="text-[10px] font-bold text-on-surface-variant dark:text-[#94a3b8] uppercase tracking-wider font-mono">Đơn hàng liên kết</p>
+                            <h3 class="text-2xl font-black mt-1 text-on-surface dark:text-[#f8fafc] font-mono" id="stat-orders-count">0</h3>
+                            <p class="text-[10px] text-tertiary mt-0.5 font-sans">Vận đơn liên kết</p>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500 shadow-[0_0_8px_#10b981]"></div>
+                            <p class="text-[10px] font-bold text-on-surface-variant dark:text-[#94a3b8] uppercase tracking-wider font-mono">Quy trình mẫu</p>
+                            <h3 class="text-2xl font-black mt-1 text-on-surface dark:text-[#f8fafc] font-mono" id="stat-workflows-count">0</h3>
+                            <p class="text-[10px] text-on-surface-variant dark:text-[#94a3b8] mt-0.5 font-sans">Kịch bản hiện có</p>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary shadow-[0_0_8px_#06b6d4]"></div>
+                            <p class="text-[10px] font-bold text-on-surface-variant dark:text-[#94a3b8] uppercase tracking-wider font-mono">Ghi chú nhật ký</p>
+                            <h3 class="text-2xl font-black mt-1 text-on-surface dark:text-[#f8fafc]" id="stat-avg-mood">😊</h3>
+                            <p class="text-[10px] text-on-surface-variant dark:text-[#94a3b8] mt-0.5">Số mục nhật ký ghi nhận</p>
+                        </div>
+                    </div>
+
+                    <!-- Bento Content Grid -->
+                    <div class="grid grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden">
+                        <!-- Left Panel: Today Schedule -->
+                        <div class="col-span-7 glass-panel rounded-xl p-6 flex flex-col h-full overflow-hidden">
+                            <h3 class="text-base font-bold text-on-surface dark:text-[#f8fafc] mb-3 shrink-0">Lịch trình & Việc quan trọng hôm nay</h3>
+                            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1" id="dashboard-schedule-list">
+                                <!-- Dynamic Render -->
+                            </div>
+                        </div>
+                        <!-- Right Panel: Quick Notes & Task Progress -->
+                        <div class="col-span-5 flex flex-col justify-between h-full overflow-hidden space-y-4">
+                            <!-- Task completion meter -->
+                            <div class="glass-panel rounded-xl p-5 shrink-0">
+                                <h3 class="text-sm font-bold text-on-surface dark:text-[#f8fafc] mb-2">Tiến độ hôm nay</h3>
+                                <div class="w-full bg-[#121232]/10 dark:bg-[#121232] h-2.5 rounded-full overflow-hidden mt-2">
+                                    <div class="bg-gradient-to-r from-primary to-primary-container h-full transition-all duration-500" id="dashboard-progress-bar" style="width: 0%"></div>
+                                </div>
+                                <div class="flex justify-between items-center mt-2 text-[10px] font-mono text-on-surface-variant dark:text-[#94a3b8]">
+                                    <span id="dashboard-progress-text">0% hoàn thành</span>
+                                    <span id="dashboard-progress-count">0/0 Tasks</span>
+                                </div>
+                            </div>
+                            <!-- Quick Journal Draft -->
+                            <div class="glass-panel rounded-xl p-5 flex-1 min-h-0 flex flex-col overflow-hidden">
+                                <h3 class="text-sm font-bold text-on-surface dark:text-[#f8fafc] mb-2 shrink-0">Ý tưởng & Nhật ký nhanh</h3>
+                                <textarea id="dashboard-quick-note" placeholder="Ghi nhanh suy nghĩ của bạn..." class="flex-1 w-full glass-input rounded p-3 text-xs resize-none overflow-y-auto custom-scrollbar focus:outline-none"></textarea>
+                                <button onclick="saveQuickNote()" class="mt-3 w-full bg-gradient-to-r from-primary to-primary-container text-white text-xs font-bold py-2 rounded-lg hover:brightness-110 transition-all shrink-0">LƯU VÀO NHẬT KÝ</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. TASKS VIEW -->
+                <section id="view-tasks" class="view hidden h-full flex flex-col space-y-4 overflow-hidden">
+                    <div class="flex items-center justify-between shrink-0">
+                        <div>
+                            <h2 class="text-2xl font-black text-on-surface dark:text-[#f8fafc] tracking-tight">Ma Trận Công Việc</h2>
+                            <p class="text-sm text-on-surface-variant dark:text-[#94a3b8]">Phân tách rõ ràng giữa việc Vận hành Công ty và việc Cá nhân với trạng thái tức thời.</p>
+                        </div>
+                        <button onclick="openAddTaskModal()" class="flex items-center space-x-1.5 bg-gradient-to-r from-primary to-primary-container text-white px-4 py-2 rounded text-xs font-bold hover:brightness-110 active:scale-95 transition-all">
+                            <span class="material-symbols-outlined text-sm">add</span>
+                            <span>THÊM CÔNG VIỆC</span>
+                        </button>
+                    </div>
+
+                    <!-- Filter & Search Options -->
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-outline-variant dark:border-[#2d2d59] pb-2 shrink-0">
+                        <div class="flex space-x-4">
+                            <span class="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-tertiary font-mono uppercase">BẢNG ĐIỀU HƯỚNG MA TRẬN</span>
+                        </div>
+                        <!-- Order/Bill Filter Dropdown -->
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-on-surface-variant dark:text-[#94a3b8] font-mono">SỐ CHỨNG TỪ:</span>
+                            <select id="task-doc-filter" onchange="handleDocFilterChange(this.value)" class="text-xs border border-outline-variant dark:border-[#2d2d59] rounded py-1 px-3 bg-white dark:bg-[#0d0d21] text-on-surface dark:text-[#f8fafc] focus:ring-primary focus:border-primary">
+                                <option value="all">Hiển thị tất cả</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- MATRIX WRAPPER -->
+                    <div class="flex-1 min-h-0 flex flex-col space-y-6 overflow-y-auto pr-1 custom-scrollbar">
+                        
+                        <!-- PANEL 1: CÔNG VIỆC CÔNG TY (LOGISTICS/OPERATIONAL) -->
+                        <div class="space-y-2 shrink-0">
+                            <div class="flex items-center space-x-2 px-2 py-1.5 bg-surface-container-high dark:bg-[#121232]/80 border border-black/5 dark:border-white/5 rounded-lg shrink-0">
+                                <span class="material-symbols-outlined text-primary text-lg">corporate_fare</span>
+                                <h3 class="text-xs font-black text-on-surface dark:text-[#f8fafc] uppercase tracking-wider font-mono">Vận hành công ty & Logistics</h3>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <!-- Column: To Do -->
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                    <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
+                                        <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded font-mono">CHƯA LÀM (TO DO)</span>
+                                        <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-company-todo">0</span>
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-company-todo">
+                                        <!-- Dynamic render Task Cards -->
+                                    </div>
+                                </div>
+                                <!-- Column: Doing -->
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                    <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
+                                        <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded font-mono">ĐANG LÀM (DOING)</span>
+                                        <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-company-doing">0</span>
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-company-doing">
+                                        <!-- Dynamic render Task Cards -->
+                                    </div>
+                                </div>
+                                <!-- Column: Done -->
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                    <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
+                                        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">ĐÃ XONG (DONE)</span>
+                                        <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-company-done">0</span>
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-company-done">
+                                        <!-- Dynamic render Task Cards -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PANEL 2: CÁ NHÂN & CUỘC SỐNG -->
+                        <div class="space-y-2 shrink-0 pb-4">
+                            <div class="flex items-center space-x-2 px-2 py-1.5 bg-surface-container-high dark:bg-[#121232]/80 border border-black/5 dark:border-white/5 rounded-lg shrink-0">
+                                <span class="material-symbols-outlined text-tertiary text-lg">family_restroom</span>
+                                <h3 class="text-xs font-black text-on-surface dark:text-[#f8fafc] uppercase tracking-wider font-mono">Cá nhân & Đời sống</h3>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <!-- Column: To Do -->
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                    <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
+                                        <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded font-mono">CHƯA LÀM (TO DO)</span>
+                                        <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-personal-todo">0</span>
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-personal-todo">
+                                        <!-- Dynamic render Task Cards -->
+                                    </div>
+                                </div>
+                                <!-- Column: Doing -->
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                    <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
+                                        <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded font-mono">ĐANG LÀM (DOING)</span>
+                                        <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-personal-doing">0</span>
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-personal-doing">
+                                        <!-- Dynamic render Task Cards -->
+                                    </div>
+                                </div>
+                                <!-- Column: Done -->
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                    <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
+                                        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">ĐÃ XONG (DONE)</span>
+                                        <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-personal-done">0</span>
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-personal-done">
+                                        <!-- Dynamic render Task Cards -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- 3. CALENDAR VIEW -->
+                <section id="view-calendar" class="view hidden h-full flex flex-col space-y-6 overflow-hidden">
+                    <div class="flex items-center justify-between shrink-0">
+                        <div>
+                            <h2 class="text-2xl font-black text-on-surface dark:text-[#f8fafc] tracking-tight">Lịch cá nhân</h2>
+                            <p class="text-sm text-on-surface-variant dark:text-[#94a3b8]">Lập kế hoạch công việc và cuộc họp hàng ngày.</p>
+                        </div>
+                        <button onclick="openAddEventModal()" class="flex items-center space-x-1.5 bg-gradient-to-r from-primary to-primary-container text-white px-4 py-2 rounded text-xs font-bold hover:brightness-110 active:scale-95 transition-all">
+                            <span class="material-symbols-outlined text-sm">add</span>
+                            <span>THÊM SỰ KIỆN LỊCH</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden">
+                        <!-- Calendar Main Grid -->
+                        <div class="col-span-8 glass-panel rounded-xl p-6 flex flex-col h-full overflow-hidden">
+                            <div class="flex items-center justify-between mb-4 shrink-0">
+                                <h3 class="text-base font-bold text-on-surface dark:text-[#f8fafc]" id="calendar-month-year">Tháng 7, 2026</h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="changeMonth(-1)" class="p-1 border border-outline-variant dark:border-[#2d2d59] rounded hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95">
+                                        <span class="material-symbols-outlined text-xs">chevron_left</span>
+                                    </button>
+                                    <button onclick="changeMonth(1)" class="p-1 border border-outline-variant dark:border-[#2d2d59] rounded hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95">
+                                        <span class="material-symbols-outlined text-xs">chevron_right</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-px bg-outline-variant dark:bg-[#2d2d59] border border-outline-variant dark:border-[#2d2d59] rounded flex-1 min-h-0" id="calendar-grid-container">
+                                <!-- Days Header -->
+                                <div class="bg-surface-container-low dark:bg-[#0a0a1f] py-2 text-center text-xs font-bold text-on-surface-variant">CN</div>
+                                <div class="bg-surface-container-low dark:bg-[#0a0a1f] py-2 text-center text-xs font-bold text-on-surface-variant">T2</div>
+                                <div class="bg-surface-container-low dark:bg-[#0a0a1f] py-2 text-center text-xs font-bold text-on-surface-variant">T3</div>
+                                <div class="bg-surface-container-low dark:bg-[#0a0a1f] py-2 text-center text-xs font-bold text-on-surface-variant">T4</div>
+                                <div class="bg-surface-container-low dark:bg-[#0a0a1f] py-2 text-center text-xs font-bold text-on-surface-variant">T5</div>
+                                <div class="bg-surface-container-low dark:bg-[#0a0a1f] py-2 text-center text-xs font-bold text-on-surface-variant">T6</div>
+                                <div class="bg-surface-container-low dark:bg-[#0a0a1f] py-2 text-center text-xs font-bold text-on-surface-variant">T7</div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel -->
+                        <div class="col-span-4 glass-panel rounded-xl p-6 flex flex-col h-full overflow-hidden">
+                            <h3 class="text-base font-bold text-on-surface dark:text-[#f8fafc] shrink-0">Chi tiết sự kiện</h3>
+                            <p class="text-xs text-on-surface-variant dark:text-[#94a3b8] mt-1 mb-4 shrink-0" id="selected-date-label">Chọn một ngày để xem lịch trình.</p>
+                            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1" id="selected-day-events-list">
+                                <!-- Dynamic Render -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. DIARY VIEW -->
+                <section id="view-diary" class="view hidden h-full flex flex-col space-y-6 overflow-hidden">
+                    <div class="flex items-center justify-between shrink-0">
+                        <div>
+                            <h2 class="text-2xl font-black text-on-surface dark:text-[#f8fafc] tracking-tight">Nhật ký cá nhân</h2>
+                            <p class="text-sm text-on-surface-variant dark:text-[#94a3b8]">Theo dõi suy nghĩ, cảm xúc và lưu giữ khoảnh khắc.</p>
+                        </div>
+                        <button onclick="createNewDiaryEntry()" class="flex items-center space-x-1.5 bg-gradient-to-r from-primary to-primary-container text-white px-4 py-2 rounded text-xs font-bold hover:brightness-110 active:scale-95 transition-all">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                            <span>VIẾT TRANG MỚI</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden">
+                        <!-- Left Panel: Archive Entries -->
+                        <div class="col-span-4 glass-panel rounded-xl p-4 flex flex-col h-full overflow-hidden">
+                            <h3 class="text-sm font-bold text-on-surface dark:text-[#f8fafc] mb-3 shrink-0">Lịch sử trang viết</h3>
+                            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="diary-list-container">
+                                <!-- Dynamic Render -->
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Dotted Journal Editor Paper -->
+                        <div class="col-span-8 border border-outline-variant dark:border-white/10 rounded-xl journal-paper p-8 flex flex-col h-full overflow-hidden relative" id="diary-editor-container">
+                            <div id="diary-no-select-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-[#070714] z-10 rounded-xl">
+                                <span class="material-symbols-outlined text-5xl text-on-surface-variant">edit_note</span>
+                                <p class="text-sm text-on-surface-variant mt-2">Chọn một trang nhật ký bên trái hoặc tạo trang viết mới.</p>
+                            </div>
+                            
+                            <!-- Main Editor Layout -->
+                            <div class="flex-1 flex flex-col h-full overflow-hidden space-y-4">
+                                <div class="flex items-center justify-between border-b border-outline-variant dark:border-white/10 pb-3 shrink-0">
+                                    <input type="text" id="diary-title-input" placeholder="Tiêu đề nhật ký hôm nay..." class="w-full text-xl font-bold bg-transparent border-none p-0 focus:ring-0 text-on-surface dark:text-[#f8fafc]">
+                                    <div class="flex space-x-2 shrink-0">
+                                        <button onclick="saveDiaryEntry()" class="p-1 border border-outline-variant dark:border-[#2d2d59] rounded hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95 text-primary">
+                                            <span class="material-symbols-outlined text-lg">save</span>
+                                        </button>
+                                        <button onclick="deleteDiaryEntry()" class="p-1 border border-outline-variant dark:border-[#2d2d59] rounded hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95 text-error">
+                                            <span class="material-symbols-outlined text-lg">delete</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Mood & Tags selection (FLEX WRAP SAFE) -->
+                                <div class="flex flex-wrap gap-4 text-sm shrink-0 border-b border-outline-variant dark:border-white/5 pb-2">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs text-on-surface-variant dark:text-[#94a3b8] font-mono">TÂM TRẠNG:</span>
+                                        <select id="diary-mood-select" class="text-xs border border-outline-variant dark:border-[#2d2d59] rounded py-0.5 px-2 bg-white dark:bg-[#0d0d21] text-on-surface dark:text-[#f8fafc] focus:ring-primary focus:border-primary">
+                                            <option value="😃">Hào hứng (😃)</option>
+                                            <option value="😊">Vui vẻ (😊)</option>
+                                            <option value="😐">Bình thường (😐)</option>
+                                            <option value="😔">Buồn bã (😔)</option>
+                                            <option value="😡">Tức giận (😡)</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs text-on-surface-variant dark:text-[#94a3b8] font-mono">TAGS:</span>
+                                        <input type="text" id="diary-tags-input" placeholder="ví dụ: #work #life" class="text-xs border border-outline-variant dark:border-[#2d2d59] rounded py-0.5 px-2 bg-transparent text-on-surface dark:text-[#f8fafc] focus:ring-primary focus:border-primary w-40">
+                                    </div>
+                                </div>
+                                <!-- Editor Textarea -->
+                                <textarea id="diary-content-input" class="flex-1 w-full bg-transparent border-none p-0 focus:ring-0 text-sm leading-relaxed resize-none custom-scrollbar overflow-y-auto text-on-surface-variant dark:text-[#94a3b8]" placeholder="Bắt đầu viết suy nghĩ của bạn ở đây..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. ANALYTICS VIEW -->
+                <section id="view-analytics" class="view hidden h-full flex flex-col space-y-6 overflow-hidden">
+                    <div class="shrink-0">
+                        <h2 class="text-2xl font-black text-on-surface dark:text-[#f8fafc] tracking-tight">Phân tích hệ thống</h2>
+                        <p class="text-sm text-on-surface-variant dark:text-[#94a3b8]">Theo dõi hiệu suất vận hành kịch bản và phân bổ task.</p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6 shrink-0">
+                        <!-- Left Chart panel -->
+                        <div class="col-span-2 glass-panel rounded-xl p-6">
+                            <h3 class="text-base font-bold text-on-surface dark:text-[#f8fafc] mb-4">Tổng quan phân bố thời gian (Ước tính)</h3>
+                            <div class="h-44 flex items-end justify-between px-6 pb-2 border-b border-outline-variant dark:border-[#2d2d59] font-mono" id="chart-time-dist">
+                                <div class="flex flex-col items-center w-12">
+                                    <div class="w-8 bg-primary rounded-t shadow-[0_0_8px_#a855f7]" style="height: 60%"></div>
+                                    <span class="text-xs mt-2 text-on-surface-variant dark:text-[#94a3b8]">T2</span>
+                                </div>
+                                <div class="flex flex-col items-center w-12">
+                                    <div class="w-8 bg-primary rounded-t shadow-[0_0_8px_#a855f7]" style="height: 75%"></div>
+                                    <span class="text-xs mt-2 text-on-surface-variant dark:text-[#94a3b8]">T3</span>
+                                </div>
+                                <div class="flex flex-col items-center w-12">
+                                    <div class="w-8 bg-primary rounded-t shadow-[0_0_8px_#a855f7]" style="height: 40%"></div>
+                                    <span class="text-xs mt-2 text-on-surface-variant dark:text-[#94a3b8]">T4</span>
+                                </div>
+                                <div class="flex flex-col items-center w-12">
+                                    <div class="w-8 bg-primary rounded-t shadow-[0_0_8px_#a855f7]" style="height: 90%"></div>
+                                    <span class="text-xs mt-2 text-on-surface-variant dark:text-[#94a3b8]">T5</span>
+                                </div>
+                                <div class="flex flex-col items-center w-12">
+                                    <div class="w-8 bg-primary rounded-t shadow-[0_0_8px_#a855f7]" style="height: 80%"></div>
+                                    <span class="text-xs mt-2 text-on-surface-variant dark:text-[#94a3b8]">T6</span>
+                                </div>
+                                <div class="flex flex-col items-center w-12">
+                                    <div class="w-8 bg-primary-container rounded-t shadow-[0_0_8px_#6366f1]" style="height: 30%"></div>
+                                    <span class="text-xs mt-2 text-on-surface-variant dark:text-[#94a3b8]">T7</span>
+                                </div>
+                                <div class="flex flex-col items-center w-12">
+                                    <div class="w-8 bg-primary-container rounded-t shadow-[0_0_8px_#6366f1]" style="height: 20%"></div>
+                                    <span class="text-xs mt-2 text-on-surface-variant dark:text-[#94a3b8]">CN</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel -->
+                        <div class="col-span-1 glass-panel rounded-xl p-6 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-sm font-bold text-on-surface dark:text-[#f8fafc] mb-1">Độ sâu tập trung trung bình</h3>
+                            </div>
+                            <div class="flex flex-col items-center py-2">
+                                <div class="w-24 h-24 border-[8px] border-primary border-r-transparent rounded-full flex items-center justify-center shadow-[0_0_12px_rgba(168,85,247,0.2)]">
+                                    <span class="text-lg font-black font-mono text-primary">82%</span>
+                                </div>
+                            </div>
+                            <div class="text-center text-[10px] font-mono text-on-surface-variant dark:text-[#94a3b8]">
+                                <span>Khung giờ vàng: 08:30 - 11:30 sáng</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category Breakdown -->
+                    <div class="glass-panel rounded-xl p-6 flex-1 min-h-0 flex flex-col overflow-hidden">
+                        <h3 class="text-base font-bold text-on-surface dark:text-[#f8fafc] mb-3 shrink-0">Thống kê theo danh mục công việc</h3>
+                        <div class="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-1" id="analytics-categories-progress">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. WORKFLOWS VIEW -->
+                <section id="view-workflows" class="view hidden h-full flex flex-col space-y-6 overflow-hidden">
+                    <div class="flex items-center justify-between shrink-0">
+                        <div>
+                            <h2 class="text-2xl font-black text-on-surface dark:text-[#f8fafc] tracking-tight">Kịch bản Quy trình mẫu</h2>
+                            <p class="text-sm text-on-surface-variant dark:text-[#94a3b8]">Thiết kế trước các bộ kịch bản công việc mẫu để tự động khởi sinh nhanh theo lô chứng từ.</p>
+                        </div>
+                        <button onclick="openAddWorkflowModal()" class="flex items-center space-x-1.5 bg-gradient-to-r from-primary to-primary-container text-white px-4 py-2 rounded text-xs font-bold hover:brightness-110 active:scale-95 transition-all">
+                            <span class="material-symbols-outlined text-sm">add</span>
+                            <span>TẠO KỊCH BẢN MỚI</span>
+                        </button>
+                    </div>
+
+                    <!-- User Created Workflows Grid -->
+                    <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="workflows-grid-container">
+                            <!-- Dynamic Render -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. AI ASSISTANT VIEW -->
+                <section id="view-ai-assistant" class="view hidden h-full flex flex-col space-y-6 overflow-hidden">
+                    <div class="shrink-0">
+                        <h2 class="text-2xl font-black text-on-surface dark:text-[#f8fafc] tracking-tight">Trợ lý hỗ trợ vận hành</h2>
+                        <p class="text-sm text-on-surface-variant dark:text-[#94a3b8]">Hỗ trợ tổng hợp báo cáo và phân tích số liệu công việc từ nhật ký & danh sách việc làm.</p>
+                    </div>
+
+                    <div class="flex-1 min-h-0 flex space-x-6 overflow-hidden">
+                        <!-- Chat Box Component -->
+                        <div class="flex-1 glass-panel rounded-xl flex flex-col h-full overflow-hidden">
+                            <!-- Messages Area -->
+                            <div id="ai-chat-messages" class="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4 bg-white/2">
+                                <div class="flex space-x-3 items-start">
+                                    <div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-sm shrink-0">🤖</div>
+                                    <div class="bg-surface-container dark:bg-[#121232] border border-outline-variant dark:border-white/5 p-4 rounded-xl max-w-xl text-sm leading-relaxed text-on-surface dark:text-[#f8fafc]">
+                                        Hệ thống trợ lý đã sẵn sàng. Tôi có thể hỗ trợ tóm tắt báo cáo công việc hoặc lọc các đầu việc theo số chứng từ của bạn.
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Suggestions chips -->
+                            <div class="px-6 py-3 border-t border-outline-variant dark:border-[#2d2d59] flex flex-wrap gap-2 bg-surface-container-low dark:bg-[#0a0a1f] shrink-0">
+                                <button onclick="sendQuickPrompt('Tóm tắt công việc ngày hôm nay')" class="text-[11px] font-mono border border-outline-variant dark:border-[#2d2d59] bg-white/5 px-3 py-1 rounded-full text-on-surface-variant dark:text-[#94a3b8] hover:border-primary hover:text-on-surface dark:hover:text-white transition-all">Tóm tắt công việc hôm nay</button>
+                                <button onclick="sendQuickPrompt('Phân tích tiến độ công việc')" class="text-[11px] font-mono border border-outline-variant dark:border-[#2d2d59] bg-white/5 px-3 py-1 rounded-full text-on-surface-variant dark:text-[#94a3b8] hover:border-primary hover:text-on-surface dark:hover:text-white transition-all">Phân tích tiến độ công việc</button>
+                                <button onclick="sendQuickPrompt('Gợi ý quy trình vận hành')" class="text-[11px] font-mono border border-outline-variant dark:border-[#2d2d59] bg-white/5 px-3 py-1 rounded-full text-on-surface-variant dark:text-[#94a3b8] hover:border-primary hover:text-on-surface dark:hover:text-white transition-all">Gợi ý quy trình vận hành</button>
+                            </div>
+                            <!-- Input Message Area -->
+                            <div class="p-4 border-t border-outline-variant dark:border-[#2d2d59] bg-white dark:bg-[#03030c] flex items-center space-x-3 shrink-0">
+                                <input type="text" id="ai-chat-input" placeholder="Nhập yêu cầu tóm tắt báo cáo..." class="flex-1 glass-input rounded-full px-4 py-2 text-sm focus:outline-none">
+                                <button onclick="sendChatMessage()" class="bg-primary text-white p-2 rounded-full hover:brightness-110 transition-all active:scale-95 flex items-center justify-center shrink-0">
+                                    <span class="material-symbols-outlined text-lg">send</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD/EDIT TASK (ADVANCED) -->
+    <div id="task-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50">
+        <div class="glass-panel rounded-xl w-[480px] p-6 space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-outline-variant dark:border-[#2d2d59]">
+                <h3 class="font-bold text-on-surface dark:text-[#f8fafc] text-base" id="task-modal-title">Thêm công việc</h3>
+                <button onclick="closeTaskModal()" class="text-on-surface-variant hover:text-on-surface dark:text-[#94a3b8]">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+            
+            <!-- Type Tabs -->
+            <div class="flex bg-surface-container-low dark:bg-[#0a0a1f] p-1 rounded border border-outline-variant dark:border-[#2d2d59] shrink-0" id="task-type-tabs">
+                <button type="button" onclick="switchTaskFormMode('single')" id="task-mode-btn-single" class="flex-1 text-center py-1 text-xs font-bold rounded bg-white dark:bg-[#1a1a44] text-primary shadow-sm">Task Đơn Lẻ</button>
+                <button type="button" onclick="switchTaskFormMode('workflow')" id="task-mode-btn-workflow" class="flex-1 text-center py-1 text-xs font-bold rounded text-on-surface-variant dark:text-[#94a3b8] hover:text-on-surface">Theo Kịch Bản Quy Trình</button>
+            </div>
+
+            <form id="task-form" class="space-y-4" onsubmit="handleTaskSubmit(event)">
+                <input type="hidden" id="task-edit-id">
+                
+                <!-- Single Task Title -->
+                <div id="form-group-task-name">
+                    <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">TÊN CÔNG VIỆC</label>
+                    <input type="text" id="task-name" class="w-full glass-input rounded px-3 py-1.5 text-sm focus:outline-none">
+                </div>
+
+                <!-- Workflow Select -->
+                <div id="form-group-workflow-select" class="hidden">
+                    <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">CHỌN KỊCH BẢN QUY TRÌNH</label>
+                    <select id="task-workflow-id" class="w-full border border-outline-variant dark:border-[#2d2d59] rounded px-3 py-1.5 text-sm bg-white dark:bg-[#0a0a1f] text-on-surface dark:text-[#f8fafc] focus:ring-primary focus:border-primary">
+                        <!-- Rendered options -->
+                    </select>
+                </div>
+
+                <!-- Document Number for aggregation -->
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">SỐ CHỨNG TỪ (ORDER/BILL ID - TÙY CHỌN)</label>
+                    <input type="text" id="task-document-no" placeholder="ví dụ: IMP-8899, BL-2026-X" class="w-full glass-input rounded px-3 py-1.5 text-sm focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">DANH MỤC</label>
+                        <select id="task-category" class="w-full border border-outline-variant dark:border-[#2d2d59] rounded px-3 py-1.5 text-sm bg-white dark:bg-[#0a0a1f] text-on-surface dark:text-[#f8fafc] focus:ring-primary focus:border-primary">
+                            <option value="Công việc">💼 Công việc</option>
+                            <option value="Cá nhân">🏠 Cá nhân</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">MỨC ƯU TIÊN</label>
+                        <select id="task-priority" class="w-full border border-outline-variant dark:border-[#2d2d59] rounded px-3 py-1.5 text-sm bg-white dark:bg-[#0a0a1f] text-on-surface dark:text-[#f8fafc] focus:ring-primary focus:border-primary">
+                            <option value="Thấp">🟢 Thấp</option>
+                            <option value="Trung bình">🟡 Trung bình</option>
+                            <option value="Cao">🔴 Cao</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">HẠN CHÓT</label>
+                    <input type="date" id="task-duedate" required class="w-full border border-outline-variant dark:border-[#2d2d59] rounded px-3 py-1.5 text-sm bg-white dark:bg-[#0a0a1f] text-on-surface dark:text-[#f8fafc] focus:ring-primary focus:border-primary">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 border border-outline-variant dark:border-[#2d2d59] rounded text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 transition-all">HỦY BỎ</button>
+                    <button type="submit" class="px-4 py-2 bg-gradient-to-r from-primary to-primary-container text-white rounded text-xs font-bold hover:brightness-110 transition-all">LƯU THAY ĐỔI</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD EVENT -->
+    <div id="event-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50">
+        <div class="glass-panel rounded-xl w-[400px] p-6 space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-outline-variant dark:border-[#2d2d59]">
+                <h3 class="font-bold text-on-surface dark:text-[#f8fafc] text-base">Thêm sự kiện lịch mới</h3>
+                <button onclick="closeEventModal()" class="text-on-surface-variant hover:text-on-surface dark:text-[#94a3b8]">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+            <form id="event-form" class="space-y-4" onsubmit="handleEventSubmit(event)">
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">TÊN SỰ KIỆN</label>
+                    <input type="text" id="event-name" required class="w-full glass-input rounded px-3 py-1.5 text-sm focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">NGÀY</label>
+                        <input type="date" id="event-date" required class="w-full border border-outline-variant dark:border-[#2d2d59] rounded px-3 py-1.5 text-sm bg-white dark:bg-[#0a0a1f] text-on-surface dark:text-[#f8fafc] focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">THỜI GIAN</label>
+                        <input type="time" id="event-time" required class="w-full border border-outline-variant dark:border-[#2d2d59] rounded px-3 py-1.5 text-sm bg-white dark:bg-[#0a0a1f] text-on-surface dark:text-[#f8fafc] focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">MÔ TẢ NGẮN</label>
+                    <input type="text" id="event-desc" class="w-full glass-input rounded px-3 py-1.5 text-sm focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeEventModal()" class="px-4 py-2 border border-[#2d2d59] rounded text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 transition-all">HỦY BỎ</button>
+                    <button type="submit" class="px-4 py-2 bg-gradient-to-r from-primary to-primary-container text-white rounded text-xs font-bold hover:brightness-110 transition-all">LƯU SỰ KIỆN</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD/EDIT WORKFLOW TEMPLATE -->
+    <div id="workflow-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50">
+        <div class="glass-panel rounded-xl w-[450px] p-6 space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-outline-variant dark:border-[#2d2d59]">
+                <h3 class="font-bold text-on-surface dark:text-[#f8fafc] text-base">Tạo kịch bản quy trình mới</h3>
+                <button onclick="closeWorkflowModal()" class="text-on-surface-variant hover:text-on-surface dark:text-[#94a3b8]">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+            <form id="workflow-form" class="space-y-4" onsubmit="handleWorkflowSubmit(event)">
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">TÊN KỊCH BẢN QUY TRÌNH</label>
+                    <input type="text" id="workflow-name" required placeholder="ví dụ: Quy trình Xuất khẩu hàng" class="w-full glass-input rounded px-3 py-1.5 text-sm focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">MÔ TẢ NGẮN</label>
+                    <input type="text" id="workflow-desc" placeholder="Các công việc chuẩn bị cho hồ sơ xuất khẩu..." class="w-full glass-input rounded px-3 py-1.5 text-sm focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">DANH SÁCH TASK CON (MỖI DÒNG LÀ 1 TASK)</label>
+                    <textarea id="workflow-tasks-list" rows="5" required placeholder="Tạo Packing List (PKL)&#10;Tạo Commercial Invoice&#10;Khai hải quan điện tử" class="w-full glass-input rounded p-3 text-sm resize-none focus:outline-none"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeWorkflowModal()" class="px-4 py-2 border border-outline-variant dark:border-[#2d2d59] rounded text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 transition-all">HỦY BỎ</button>
+                    <button type="submit" class="px-4 py-2 bg-gradient-to-r from-primary to-primary-container text-white rounded text-xs font-bold hover:brightness-110 transition-all">LƯU KỊCH BẢN</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script Application Logic -->
+    <script>
+        // --- 1. STATE MANAGEMENT & STORAGE ---
+        const DEFAULT_STATE = {
+            tasks: [
+                { id: '1', name: 'Đăng ký kiểm tra chất lượng chuyên ngành', category: 'Công việc', priority: 'Cao', duedate: '2026-07-09', status: 'todo', documentNo: 'IMP-2026-09A', workflowId: 'wf-import' },
+                { id: '2', name: 'Nhận báo giá cước vận chuyển (Air)', category: 'Công việc', priority: 'Trung bình', duedate: '2026-07-09', status: 'done', documentNo: 'EXP-2026-88B', workflowId: '' },
+                { id: '3', name: 'Đối soát công nợ đại lý tháng 6', category: 'Công việc', priority: 'Thấp', duedate: '2026-07-10', status: 'doing', documentNo: '', workflowId: '' },
+                { id: '4', name: 'Chạy bộ 5km ngoài trời', category: 'Cá nhân', priority: 'Trung bình', duedate: '2026-07-09', status: 'todo', documentNo: '', workflowId: '' }
+            ],
+            events: [
+                { id: '101', name: 'Họp thông quan lô hàng hóa IMP-2026-09A', date: '2026-07-09', time: '14:30', desc: 'Họp với bên đại lý khai thuê hải quan' },
+                { id: '102', name: 'Ký duyệt tờ khai vận đơn xuất khẩu', date: '2026-07-09', time: '17:30', desc: 'Ký đóng dấu đỏ' }
+            ],
+            diary: [
+                { id: '201', title: 'Hoàn thành hồ sơ thông quan lô IMP-09A', date: '2026-07-08', content: 'Hôm nay làm thủ tục khá thuận lợi, chỉ hải quan yêu cầu kiểm hóa thực tế nhưng không phát sinh lỗi phụ trội.', mood: '😃', tags: '#logistics #customs' }
+            ],
+            workflows: [
+                { id: 'wf-export', name: 'Quy trình Xuất khẩu hàng hóa', description: 'Các bước chuẩn bị chứng từ và khai thông quan xuất khẩu.', tasks: ['Tạo Packing List (PKL)', 'Tạo Commercial Invoice', 'Khai báo hải quan xuất khẩu', 'Gửi chứng từ cho Hãng tàu (Fwd)'] },
+                { id: 'wf-import', name: 'Quy trình Nhập khẩu đường biển', description: 'Các bước làm việc với FWD và hải quan đầu nhập.', tasks: ['Kiểm tra thông tin tờ khai nháp', 'Khai báo hải quan nhập khẩu', 'Gửi bộ chứng từ cho FWD'] }
+            ]
+        };
+
+        let state = JSON.parse(localStorage.getItem('lifeos_state')) || DEFAULT_STATE;
+
+        // Migrating old completed states if any
+        state.tasks.forEach(t => {
+            if (t.status === undefined) {
+                t.status = t.completed ? 'done' : 'todo';
+                delete t.completed;
+            }
+        });
+
+        function saveState() {
+            localStorage.setItem('lifeos_state', JSON.stringify(state));
+            renderAll();
+        }
+
+        function resetData() {
+            if(confirm("Bạn có chắc chắn muốn đặt lại dữ liệu về trạng thái ban đầu?")) {
+                state = DEFAULT_STATE;
+                saveState();
+            }
+        }
+
+        // --- Theme Engine (Light/Dark Toggle) ---
+        function initTheme() {
+            const savedTheme = localStorage.getItem('lifeos_theme') || 'dark';
+            const htmlEl = document.documentElement;
+            const toggleIcon = document.getElementById('theme-toggle-icon');
+
+            if (savedTheme === 'dark') {
+                htmlEl.classList.add('dark');
+                toggleIcon.innerText = 'wb_sunny';
+            } else {
+                htmlEl.classList.remove('dark');
+                toggleIcon.innerText = 'dark_mode';
+            }
+        }
+
+        function toggleTheme() {
+            const htmlEl = document.documentElement;
+            const toggleIcon = document.getElementById('theme-toggle-icon');
+
+            if (htmlEl.classList.contains('dark')) {
+                htmlEl.classList.remove('dark');
+                toggleIcon.innerText = 'dark_mode';
+                localStorage.setItem('lifeos_theme', 'light');
+            } else {
+                htmlEl.classList.add('dark');
+                toggleIcon.innerText = 'wb_sunny';
+                localStorage.setItem('lifeos_theme', 'dark');
+            }
+        }
+
+        // --- 2. HASH ROUTER ---
+        function handleRoute() {
+            const hash = window.location.hash.substring(1) || 'dashboard';
+            
+            // Hide all views
+            document.querySelectorAll('.view').forEach(view => view.classList.add('hidden'));
+            
+            // Show target view
+            const targetView = document.getElementById(`view-${hash}`);
+            if (targetView) targetView.classList.remove('hidden');
+
+            // Toggle active sidebar link styling
+            document.querySelectorAll('.nav-item').forEach(item => {
+                const route = item.getAttribute('data-route');
+                if (route === hash) {
+                    item.classList.add('bg-black/5', 'dark:bg-white/10', 'text-on-surface', 'dark:text-[#f8fafc]', 'border-l-4', 'border-primary', 'shadow-sm');
+                    item.classList.remove('text-on-surface-variant');
+                } else {
+                    item.classList.remove('bg-black/5', 'dark:bg-white/10', 'text-on-surface', 'dark:text-[#f8fafc]', 'border-l-4', 'border-primary', 'shadow-sm');
+                    item.classList.add('text-on-surface-variant');
+                }
+            });
+
+            if (hash === 'calendar') renderCalendar();
+            if (hash === 'workflows') renderWorkflows();
+        }
+
+        window.addEventListener('hashchange', handleRoute);
+        window.addEventListener('load', () => {
+            initTheme();
+            handleRoute();
+            initClock();
+            renderAll();
+            initRipples();
+        });
+
+        // --- 3. SYSTEM CLOCK ---
+        function initClock() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('current-time').innerText = now.toLocaleTimeString('vi-VN');
+                document.getElementById('current-date').innerText = now.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' });
+            }, 1000);
+        }
+
+        // --- 4. DATA RENDER PIPELINES ---
+        function renderAll() {
+            renderDashboard();
+            renderTasks();
+            renderDiary();
+            renderAnalytics();
+            renderDocFilterOptions();
+        }
+
+        // --- DASHBOARD RENDER ---
+        function renderDashboard() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const activeTasks = state.tasks.filter(t => t.status !== 'done');
+            
+            document.getElementById('stat-tasks-today').innerText = activeTasks.length;
+            
+            const uniqueDocs = [...new Set(state.tasks.filter(t => t.documentNo).map(t => t.documentNo))].length;
+            document.getElementById('stat-orders-count').innerText = uniqueDocs;
+            document.getElementById('stat-workflows-count').innerText = state.workflows.length;
+
+            const todayTasks = state.tasks.filter(t => t.duedate === todayStr);
+            const completedToday = todayTasks.filter(t => t.status === 'done').length;
+
+            const totalTasks = todayTasks.length;
+            const progress = totalTasks > 0 ? Math.round((completedToday / totalTasks) * 100) : 0;
+            document.getElementById('dashboard-progress-bar').style.width = `${progress}%`;
+            document.getElementById('dashboard-progress-text').innerText = `${progress}% hoàn thành`;
+            document.getElementById('dashboard-progress-count').innerText = `${completedToday}/${totalTasks} Tasks`;
+
+            const scheduleList = document.getElementById('dashboard-schedule-list');
+            scheduleList.innerHTML = '';
+
+            const todayEvents = state.events.filter(e => e.date === todayStr);
+            const mergedList = [
+                ...todayEvents.map(e => ({ type: 'event', time: e.time, name: e.name, extra: e.desc, icon: 'schedule', color: 'border-primary' })),
+                ...todayTasks.map(t => ({ type: 'task', time: 'Cả ngày', name: t.name, extra: t.documentNo ? `Số chứng từ: ${t.documentNo}` : 'Đầu việc lẻ', icon: t.status === 'done' ? 'task_alt' : t.status === 'doing' ? 'hourglass_empty' : 'circle', color: 'border-tertiary', completed: t.status === 'done' }))
+            ];
+
+            if (mergedList.length === 0) {
+                scheduleList.innerHTML = `<p class="text-xs text-on-surface-variant font-mono py-4 text-center">Không có lịch trình hay công việc nào cho hôm nay.</p>`;
+            } else {
+                mergedList.sort((a,b) => a.time.localeCompare(b.time)).forEach(item => {
+                    scheduleList.innerHTML += `
+                        <div class="flex items-center space-x-3 p-3 border-l-4 ${item.color} bg-black/5 dark:bg-white/5 border-outline-variant dark:border-white/10 rounded-lg">
+                            <span class="material-symbols-outlined text-lg ${item.completed ? 'text-green-600 dark:text-green-400' : 'text-on-surface-variant'}">${item.icon}</span>
+                            <div class="flex-1">
+                                <h4 class="text-sm font-semibold text-on-surface dark:text-[#f8fafc] ${item.completed ? 'line-through opacity-40' : ''}">${item.name}</h4>
+                                <p class="text-xs text-on-surface-variant font-mono mt-0.5">${item.time} &bull; ${item.extra}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function saveQuickNote() {
+            const noteText = document.getElementById('dashboard-quick-note').value.trim();
+            if (!noteText) return;
+            const newEntry = {
+                id: Date.now().toString(),
+                title: 'Ghi chép nhanh vận hành',
+                date: new Date().toISOString().split('T')[0],
+                content: noteText,
+                mood: '😐',
+                tags: '#quicknote'
+            };
+            state.diary.unshift(newEntry);
+            document.getElementById('dashboard-quick-note').value = '';
+            saveState();
+            alert('Đã lưu ghi chú nhanh vào Nhật ký thành công!');
+        }
+
+        // --- TASKS RENDER (ANTI-OVERLAP GRID) ---
+        let currentDocFilter = 'all';
+        let globalSearchQuery = '';
+
+        function handleDocFilterChange(value) {
+            currentDocFilter = value;
+            renderTasks();
+        }
+
+        function handleGlobalSearch(query) {
+            globalSearchQuery = query.toLowerCase().trim();
+            renderTasks();
+        }
+
+        function renderDocFilterOptions() {
+            const select = document.getElementById('task-doc-filter');
+            select.innerHTML = '<option value="all">Hiển thị tất cả</option>';
+            const docs = [...new Set(state.tasks.filter(t => t.documentNo).map(t => t.documentNo))];
+            docs.forEach(doc => {
+                select.innerHTML += `<option value="${doc}">${doc}</option>`;
+            });
+            select.value = currentDocFilter;
+        }
+
+        function renderTasks() {
+            const panels = {
+                'Công việc': { todo: 'list-company-todo', doing: 'list-company-doing', done: 'list-company-done' },
+                'Cá nhân': { todo: 'list-personal-todo', doing: 'list-personal-doing', done: 'list-personal-done' }
+            };
+
+            const counts = {
+                'Công việc': { todo: 'count-company-todo', doing: 'count-company-doing', done: 'count-company-done' },
+                'Cá nhân': { todo: 'count-personal-todo', doing: 'count-personal-doing', done: 'count-personal-done' }
+            };
+
+            Object.values(panels).forEach(grp => {
+                Object.values(grp).forEach(id => {
+                    document.getElementById(id).innerHTML = '';
+                });
+            });
+
+            let filtered = state.tasks;
+            if (globalSearchQuery) {
+                filtered = filtered.filter(t => 
+                    t.name.toLowerCase().includes(globalSearchQuery) || 
+                    (t.documentNo && t.documentNo.toLowerCase().includes(globalSearchQuery))
+                );
+            }
+            if (currentDocFilter !== 'all') {
+                filtered = filtered.filter(t => t.documentNo === currentDocFilter);
+            }
+
+            const counters = {
+                'Công việc': { todo: 0, doing: 0, done: 0 },
+                'Cá nhân': { todo: 0, doing: 0, done: 0 }
+            };
+
+            filtered.forEach(task => {
+                const category = task.category || 'Công việc';
+                const status = task.status || 'todo';
+                
+                counters[category][status]++;
+
+                const targetContainerId = panels[category][status];
+                const containerEl = document.getElementById(targetContainerId);
+
+                const prioColor = task.priority === 'Cao' ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]' : task.priority === 'Trung bình' ? 'bg-yellow-500 shadow-[0_0_8px_#facc15]' : 'bg-emerald-500 shadow-[0_0_8px_#10b981]';
+                
+                let actionBtnsHtml = '';
+                if (status === 'todo') {
+                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'doing')" class="bg-gradient-to-r from-primary to-primary-container text-white text-[9px] font-bold px-2 py-1 rounded hover:brightness-110 transition-all shrink-0">Bắt đầu</button>`;
+                } else if (status === 'doing') {
+                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'done')" class="bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-emerald-700 transition-all shrink-0">Xong</button>`;
+                } else {
+                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'todo')" class="text-on-surface-variant hover:text-primary text-[9px] font-bold shrink-0">Làm lại</button>`;
+                }
+
+                const cardStyle = status === 'done' ? 'opacity-40 bg-black/5 dark:bg-[#0d0d21]/30' : 'bg-white dark:bg-[#0f0f2d]/80 border-outline-variant hover:border-primary/50';
+
+                containerEl.innerHTML += `
+                    <div class="border border-outline-variant dark:border-white/5 p-3 rounded-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[120px] ${cardStyle}">
+                        <div class="flex-1 pb-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[9px] font-mono text-on-surface-variant">${task.duedate}</span>
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full ${prioColor}"></span>
+                                    <span class="text-[9px] font-bold text-on-surface-variant font-mono uppercase">${task.priority}</span>
+                                </div>
+                            </div>
+                            <h4 class="text-xs font-semibold text-on-surface dark:text-[#f8fafc] mt-2 leading-relaxed ${status === 'done' ? 'line-through opacity-50' : ''}">${task.name}</h4>
+                            ${task.documentNo ? `
+                            <div class="mt-2">
+                                <span class="inline-flex items-center space-x-1 text-[9px] font-mono font-bold bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-md uppercase">
+                                    <span class="material-symbols-outlined text-[10px]">local_shipping</span>
+                                    <span>${task.documentNo}</span>
+                                </span>
+                            </div>` : ''}
+                        </div>
+                        <div class="flex items-center justify-between border-t border-outline-variant dark:border-white/5 pt-2 mt-auto shrink-0">
+                            <div class="space-x-1">
+                                <button onclick="openEditTaskModal('${task.id}')" class="text-primary hover:underline text-[9px] font-bold">SỬA</button>
+                                <button onclick="deleteTask('${task.id}')" class="text-error hover:underline text-[9px] font-bold">XÓA</button>
+                            </div>
+                            <div>
+                                ${actionBtnsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            Object.keys(counts).forEach(cat => {
+                Object.keys(counts[cat]).forEach(status => {
+                    const id = counts[cat][status];
+                    document.getElementById(id).innerText = counters[cat][status];
+                });
+            });
+
+            Object.values(panels).forEach(grp => {
+                Object.values(grp).forEach(id => {
+                    const container = document.getElementById(id);
+                    if (container.children.length === 0) {
+                        container.innerHTML = `<p class="text-[10px] text-on-surface-variant font-mono py-8 text-center bg-black/5 dark:bg-white/2 border border-dashed border-outline-variant dark:border-white/5 rounded-lg">Trống</p>`;
+                    }
+                });
+            });
+        }
+
+        function updateTaskStatus(id, newStatus) {
+            const task = state.tasks.find(t => t.id === id);
+            if (task) {
+                task.status = newStatus;
+                saveState();
+            }
+        }
+
+        function deleteTask(id) {
+            if (confirm('Bạn có thực sự muốn xóa công việc này?')) {
+                state.tasks = state.tasks.filter(t => t.id !== id);
+                saveState();
+            }
+        }
+
+        // TASK MODAL LOGIC
+        let currentTaskFormMode = 'single';
+
+        function switchTaskFormMode(mode) {
+            currentTaskFormMode = mode;
+            const btnSingle = document.getElementById('task-mode-btn-single');
+            const btnWf = document.getElementById('task-mode-btn-workflow');
+            const grpName = document.getElementById('form-group-task-name');
+            const grpWf = document.getElementById('form-group-workflow-select');
+
+            if (mode === 'single') {
+                btnSingle.className = "flex-1 text-center py-1 text-xs font-bold rounded bg-white dark:bg-[#1a1a44] text-primary shadow-sm";
+                btnWf.className = "flex-1 text-center py-1 text-xs font-bold rounded text-on-surface-variant hover:text-on-surface";
+                grpName.classList.remove('hidden');
+                grpWf.classList.add('hidden');
+                document.getElementById('task-name').setAttribute('required', 'true');
+            } else {
+                btnWf.className = "flex-1 text-center py-1 text-xs font-bold rounded bg-white dark:bg-[#1a1a44] text-primary shadow-sm";
+                btnSingle.className = "flex-1 text-center py-1 text-xs font-bold rounded text-on-surface-variant hover:text-on-surface";
+                grpWf.classList.remove('hidden');
+                grpName.classList.add('hidden');
+                document.getElementById('task-name').removeAttribute('required');
+                
+                const selectWf = document.getElementById('task-workflow-id');
+                selectWf.innerHTML = '';
+                state.workflows.forEach(wf => {
+                    selectWf.innerHTML += `<option value="${wf.id}">${wf.name}</option>`;
+                });
+            }
+        }
+
+        function openAddTaskModal() {
+            document.getElementById('task-modal-title').innerText = "Thêm công việc";
+            document.getElementById('task-edit-id').value = '';
+            document.getElementById('task-name').value = '';
+            document.getElementById('task-document-no').value = '';
+            document.getElementById('task-duedate').value = new Date().toISOString().split('T')[0];
+            
+            switchTaskFormMode('single');
+            document.getElementById('task-type-tabs').classList.remove('hidden');
+
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+
+        function openEditTaskModal(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (!task) return;
+            document.getElementById('task-modal-title').innerText = "Chỉnh sửa công việc";
+            document.getElementById('task-edit-id').value = task.id;
+            document.getElementById('task-name').value = task.name;
+            document.getElementById('task-document-no').value = task.documentNo || '';
+            document.getElementById('task-category').value = task.category;
+            document.getElementById('task-priority').value = task.priority;
+            document.getElementById('task-duedate').value = task.duedate;
+            
+            document.getElementById('task-type-tabs').classList.add('hidden');
+            switchTaskFormMode('single');
+
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('task-modal').classList.add('hidden');
+        }
+
+        function handleTaskSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('task-edit-id').value;
+            const taskName = document.getElementById('task-name').value;
+            const docNo = document.getElementById('task-document-no').value.trim().toUpperCase();
+            const taskCat = document.getElementById('task-category').value;
+            const taskPri = document.getElementById('task-priority').value;
+            const taskDue = document.getElementById('task-duedate').value;
+
+            if (editId) {
+                const task = state.tasks.find(t => t.id === editId);
+                if (task) {
+                    task.name = taskName;
+                    task.documentNo = docNo;
+                    task.category = taskCat;
+                    task.priority = taskPri;
+                    task.duedate = taskDue;
+                }
+            } else {
+                if (currentTaskFormMode === 'single') {
+                    state.tasks.push({
+                        id: Date.now().toString(),
+                        name: taskName,
+                        category: taskCat,
+                        priority: taskPri,
+                        duedate: taskDue,
+                        status: 'todo',
+                        documentNo: docNo,
+                        workflowId: ''
+                    });
+                } else {
+                    const wfId = document.getElementById('task-workflow-id').value;
+                    const workflow = state.workflows.find(w => w.id === wfId);
+                    if (workflow) {
+                        workflow.tasks.forEach((taskNameItem, index) => {
+                            state.tasks.push({
+                                id: `${Date.now()}-${index}`,
+                                name: taskNameItem,
+                                category: taskCat,
+                                priority: taskPri,
+                                duedate: taskDue,
+                                status: 'todo',
+                                documentNo: docNo || `WF-${workflow.id.substring(3).toUpperCase()}`,
+                                workflowId: wfId
+                            });
+                        });
+                    }
+                }
+            }
+            saveState();
+            closeTaskModal();
+        }
+
+        function toggleQuickTaskModal() {
+            openAddTaskModal();
+        }
+
+        // --- 5. CALENDAR LOGIC ---
+        let currentCalYear = 2026;
+        let currentCalMonth = 6;
+        let selectedDateStr = null;
+
+        function changeMonth(direction) {
+            currentCalMonth += direction;
+            if (currentCalMonth < 0) {
+                currentCalMonth = 11;
+                currentCalYear -= 1;
+            } else if (currentCalMonth > 11) {
+                currentCalMonth = 0;
+                currentCalYear += 1;
+            }
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const header = document.getElementById('calendar-month-year');
+            const monthsVi = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+            header.innerText = `${monthsVi[currentCalMonth]}, ${currentCalYear}`;
+
+            const container = document.getElementById('calendar-grid-container');
+            while (container.children.length > 7) {
+                container.removeChild(container.lastChild);
+            }
+
+            const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
+            const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+
+            for(let i = 0; i < firstDay; i++) {
+                const cell = document.createElement('div');
+                cell.className = "bg-surface-container-low dark:bg-[#0a0a1f]/40 p-4 border-t border-r border-outline-variant dark:border-[#2d2d59] opacity-20";
+                container.appendChild(cell);
+            }
+
+            for(let day = 1; day <= daysInMonth; day++) {
+                const cell = document.createElement('div');
+                const dateStr = `${currentCalYear}-${(currentCalMonth+1).toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
+                
+                let isToday = false;
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (dateStr === todayStr) isToday = true;
+
+                cell.className = `bg-white dark:bg-[#0d0d21]/60 p-2 border-t border-r border-outline-variant dark:border-[#2d2d59] hover:bg-black/5 dark:hover:bg-white/5 transition-all flex flex-col justify-between cursor-pointer ${isToday ? 'ring-2 ring-primary ring-inset' : ''}`;
+                
+                const eventsCount = state.events.filter(e => e.date === dateStr).length;
+                const tasksCount = state.tasks.filter(t => t.duedate === dateStr).length;
+
+                cell.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-mono text-xs font-bold text-on-surface dark:text-[#f8fafc]">${day}</span>
+                        ${isToday ? '<span class="bg-primary text-white text-[8px] font-mono font-bold px-1 py-0.2 rounded uppercase">Hôm nay</span>' : ''}
+                    </div>
+                    <div class="flex flex-col space-y-1">
+                        ${eventsCount > 0 ? `<span class="bg-primary text-white text-[8px] font-bold px-1 rounded block truncate">${eventsCount} sự kiện</span>` : ''}
+                        ${tasksCount > 0 ? `<span class="bg-green-600 text-white text-[8px] font-bold px-1 rounded block truncate">${tasksCount} tasks</span>` : ''}
+                    </div>
+                `;
+
+                cell.onclick = () => selectCalendarDay(dateStr);
+                container.appendChild(cell);
+            }
+        }
+
+        function selectCalendarDay(dateStr) {
+            selectedDateStr = dateStr;
+            const parsed = new Date(dateStr);
+            document.getElementById('selected-date-label').innerText = parsed.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            const list = document.getElementById('selected-day-events-list');
+            list.innerHTML = '';
+
+            const dayEvents = state.events.filter(e => e.date === dateStr);
+            if (dayEvents.length === 0) {
+                list.innerHTML = `<p class="text-xs text-on-surface-variant font-mono py-4 text-center">Không có sự kiện.</p>`;
+            } else {
+                dayEvents.forEach(e => {
+                    list.innerHTML += `
+                        <div class="bg-black/5 dark:bg-white/5 border border-outline-variant dark:border-white/5 rounded-lg p-3 relative flex items-start space-x-2">
+                            <span class="material-symbols-outlined text-primary text-sm mt-0.5">schedule</span>
+                            <div class="flex-1">
+                                <h4 class="text-xs font-bold text-on-surface dark:text-[#f8fafc]">${e.name}</h4>
+                                <p class="text-[10px] font-mono text-on-surface-variant dark:text-[#94a3b8] mt-0.5">${e.time} &bull; ${e.desc}</p>
+                            </div>
+                            <button onclick="deleteEvent('${e.id}')" class="text-error hover:text-red-400">
+                                <span class="material-symbols-outlined text-xs">delete</span>
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function deleteEvent(id) {
+            if (confirm('Bạn có muốn xóa sự kiện này?')) {
+                state.events = state.events.filter(e => e.id !== id);
+                saveState();
+                if (selectedDateStr) selectCalendarDay(selectedDateStr);
+            }
+        }
+
+        function openAddEventModal() {
+            document.getElementById('event-date').value = selectedDateStr || new Date().toISOString().split('T')[0];
+            document.getElementById('event-name').value = '';
+            document.getElementById('event-time').value = '09:00';
+            document.getElementById('event-desc').value = '';
+            document.getElementById('event-modal').classList.remove('hidden');
+        }
+
+        function closeEventModal() {
+            document.getElementById('event-modal').classList.add('hidden');
+        }
+
+        function handleEventSubmit(e) {
+            e.preventDefault();
+            state.events.push({
+                id: Date.now().toString(),
+                name: document.getElementById('event-name').value,
+                date: document.getElementById('event-date').value,
+                time: document.getElementById('event-time').value,
+                desc: document.getElementById('event-desc').value
+            });
+            saveState();
+            closeEventModal();
+            if (selectedDateStr) selectCalendarDay(selectedDateStr);
+        }
+
+        // --- 6. DIARY LOGIC ---
+        let selectedDiaryId = null;
+
+        function renderDiary() {
+            const list = document.getElementById('diary-list-container');
+            list.innerHTML = '';
+
+            state.diary.forEach(entry => {
+                const activeStyle = entry.id === selectedDiaryId ? 'bg-black/5 dark:bg-white/10 ring-1 ring-primary' : '';
+                list.innerHTML += `
+                    <div onclick="selectDiaryEntry('${entry.id}')" class="p-3 border border-outline-variant dark:border-white/5 rounded-lg bg-white/2 dark:bg-white/2 hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer ${activeStyle}">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[9px] font-mono text-on-surface-variant dark:text-[#94a3b8]">${entry.date}</span>
+                            <span class="text-sm">${entry.mood}</span>
+                        </div>
+                        <h4 class="text-xs font-bold text-on-surface dark:text-[#f8fafc] truncate mt-1">${entry.title}</h4>
+                        <p class="text-[10px] text-on-surface-variant dark:text-[#94a3b8] truncate mt-0.5">${entry.content}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function selectDiaryEntry(id) {
+            selectedDiaryId = id;
+            const entry = state.diary.find(d => d.id === id);
+            if (!entry) return;
+
+            document.getElementById('diary-no-select-placeholder').classList.add('hidden');
+            document.getElementById('diary-title-input').value = entry.title;
+            document.getElementById('diary-mood-select').value = entry.mood;
+            document.getElementById('diary-tags-input').value = entry.tags;
+            document.getElementById('diary-content-input').value = entry.content;
+
+            renderDiary();
+        }
+
+        function createNewDiaryEntry() {
+            const newEntry = {
+                id: Date.now().toString(),
+                title: 'Trang viết mới vận hành logistics',
+                date: new Date().toISOString().split('T')[0],
+                content: '',
+                mood: '😊',
+                tags: '#customs'
+            };
+            state.diary.unshift(newEntry);
+            saveState();
+            selectDiaryEntry(newEntry.id);
+        }
+
+        function saveDiaryEntry() {
+            if (!selectedDiaryId) return;
+            const entry = state.diary.find(d => d.id === selectedDiaryId);
+            if (entry) {
+                entry.title = document.getElementById('diary-title-input').value;
+                entry.mood = document.getElementById('diary-mood-select').value;
+                entry.tags = document.getElementById('diary-tags-input').value;
+                entry.content = document.getElementById('diary-content-input').value;
+                saveState();
+                alert('Đã lưu trang viết thành công!');
+            }
+        }
+
+        function deleteDiaryEntry() {
+            if (!selectedDiaryId) return;
+            if (confirm('Bạn có muốn xóa bài nhật ký này?')) {
+                state.diary = state.diary.filter(d => d.id !== selectedDiaryId);
+                selectedDiaryId = null;
+                document.getElementById('diary-no-select-placeholder').classList.remove('hidden');
+                saveState();
+            }
+        }
+
+        // --- 7. ANALYTICS LOGIC ---
+        function renderAnalytics() {
+            const categories = {};
+            state.tasks.forEach(t => {
+                categories[t.category] = (categories[t.category] || 0) + 1;
+            });
+
+            const container = document.getElementById('analytics-categories-progress');
+            container.innerHTML = '';
+
+            const keys = Object.keys(categories);
+            if (keys.length === 0) {
+                container.innerHTML = `<p class="text-xs text-on-surface-variant dark:text-[#94a3b8] font-mono text-center">Chưa có phân loại.</p>`;
+                return;
+            }
+
+            keys.forEach(cat => {
+                const count = categories[cat];
+                const percentage = Math.round((count / state.tasks.length) * 100);
+                container.innerHTML += `
+                    <div>
+                        <div class="flex justify-between items-center text-xs font-mono text-on-surface-variant dark:text-[#94a3b8] mb-1">
+                            <span>${cat}</span>
+                            <span>${count} Tasks (${percentage}%)</span>
+                        </div>
+                        <div class="w-full bg-surface-container dark:bg-[#121232] h-2 rounded-full overflow-hidden">
+                            <div class="bg-primary h-full" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- 8. WORKFLOWS TEMPLATES MANAGEMENT ---
+        function renderWorkflows() {
+            const container = document.getElementById('workflows-grid-container');
+            container.innerHTML = '';
+
+            state.workflows.forEach(wf => {
+                const usageCount = state.tasks.filter(t => t.workflowId === wf.id).length;
+                const uniqueBills = [...new Set(state.tasks.filter(t => t.workflowId === wf.id).map(t => t.documentNo))].filter(b => b).length;
+                
+                container.innerHTML += `
+                    <div class="glass-panel p-6 rounded-xl flex flex-col justify-between min-h-64 shadow-sm relative overflow-hidden">
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center space-x-2">
+                                    <span class="material-symbols-outlined text-primary">account_tree</span>
+                                    <h4 class="font-bold text-on-surface dark:text-[#f8fafc] text-sm">${wf.name}</h4>
+                                </div>
+                                <button onclick="deleteWorkflow('${wf.id}')" class="text-error hover:text-red-400">
+                                    <span class="material-symbols-outlined text-sm">delete</span>
+                                </button>
+                            </div>
+                            <p class="text-xs text-on-surface-variant dark:text-[#94a3b8] mt-2 leading-relaxed">${wf.description}</p>
+                            
+                            <div class="mt-4 border-t border-outline-variant dark:border-white/5 pt-3 space-y-1">
+                                <h5 class="text-[9px] font-bold text-on-surface-variant dark:text-[#94a3b8] uppercase font-mono">DANH SÁCH TASK CON (${wf.tasks.length}):</h5>
+                                <div class="max-h-24 overflow-y-auto custom-scrollbar space-y-1">
+                                    ${wf.tasks.map(t => `<p class="text-xs text-on-surface dark:text-[#f8fafc] flex items-center space-x-1"><span class="w-1.5 h-1.5 rounded-full bg-primary block"></span><span>${t}</span></p>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 border-t border-outline-variant dark:border-white/5 pt-3 flex items-center justify-between">
+                            <span class="text-[9px] font-mono text-on-surface-variant dark:text-[#94a3b8] font-bold">ĐÃ ÁP DỤNG: ${uniqueBills} BILLS (${usageCount} TASKS)</span>
+                            <button onclick="applyWorkflowToNewOrder('${wf.id}')" class="bg-gradient-to-r from-primary to-primary-container text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all hover:brightness-110">SỬ DỤNG</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function deleteWorkflow(id) {
+            if(confirm("Bạn có muốn xóa kịch bản quy trình này?")) {
+                state.workflows = state.workflows.filter(w => w.id !== id);
+                saveState();
+                renderWorkflows();
+            }
+        }
+
+        function applyWorkflowToNewOrder(wfId) {
+            openAddTaskModal();
+            switchTaskFormMode('workflow');
+            document.getElementById('task-workflow-id').value = wfId;
+        }
+
+        function openAddWorkflowModal() {
+            document.getElementById('workflow-name').value = '';
+            document.getElementById('workflow-desc').value = '';
+            document.getElementById('workflow-tasks-list').value = '';
+            document.getElementById('workflow-modal').classList.remove('hidden');
+        }
+
+        function closeWorkflowModal() {
+            document.getElementById('workflow-modal').classList.add('hidden');
+        }
+
+        function handleWorkflowSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('workflow-name').value;
+            const desc = document.getElementById('workflow-desc').value;
+            const tasksRaw = document.getElementById('workflow-tasks-list').value;
+            const tasks = tasksRaw.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+
+            if(tasks.length === 0) {
+                alert('Vui lòng nhập ít nhất một task con.');
+                return;
+            }
+
+            state.workflows.push({
+                id: 'wf-' + Date.now(),
+                name: name,
+                description: desc,
+                tasks: tasks
+            });
+
+            saveState();
+            closeWorkflowModal();
+            renderWorkflows();
+        }
+
+        // --- 9. AI CHAT SYSTEM ---
+        function sendChatMessage() {
+            const input = document.getElementById('ai-chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            appendMessage('user', text);
+            input.value = '';
+
+            setTimeout(() => {
+                let response = "Tôi đã tiếp nhận ý kiến của bạn. Tôi có thể tổng hợp báo cáo hoặc lọc các đầu việc theo số chứng từ của bạn.";
+                if(text.includes('Tóm tắt')) {
+                    const total = state.tasks.length;
+                    const active = state.tasks.filter(t => t.status !== 'done').length;
+                    const orders = [...new Set(state.tasks.filter(t => t.documentNo).map(t => t.documentNo))].filter(b => b);
+                    response = `Tôi đã phân tích: Hệ thống đang quản lý ${total} công việc trên ${orders.length} lô vận đơn chứng từ khác nhau (${orders.join(', ')}). Hiện tại còn ${active} đầu việc đang cần xử lý. Khuyên bạn nên hoàn thành nốt quy trình của lô đang dở dang.`;
+                } else if (text.includes('tiến độ')) {
+                    response = "Báo cáo tiến độ: Quy trình Nhập khẩu đang hoàn thành đúng hạn 80%, các đầu việc Quy trình Xuất khẩu có xu hướng trễ 1 ngày do chậm khâu gom Commercial Invoice.";
+                } else if (text.includes('quy trình')) {
+                    response = "Gợi ý: Luôn áp dụng kịch bản mẫu khi khởi tạo việc theo lô hàng để đảm bảo tất cả các task con được gán cùng một số vận đơn.";
+                }
+                appendMessage('ai', response);
+            }, 1000);
+        }
+
+        function appendMessage(sender, text) {
+            const container = document.getElementById('ai-chat-messages');
+            const bubble = document.createElement('div');
+            bubble.className = `flex space-x-3 items-start ${sender === 'user' ? 'justify-end' : ''}`;
+            
+            if (sender === 'user') {
+                bubble.innerHTML = `
+                    <div class="bg-gradient-to-r from-primary to-primary-container text-white p-4 rounded-xl max-w-xl text-sm leading-relaxed">
+                        ${text}
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-sm shrink-0">👤</div>
+                `;
+            } else {
+                bubble.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-sm shrink-0">🤖</div>
+                    <div class="bg-surface-container dark:bg-[#121232] border border-outline-variant dark:border-white/5 p-4 rounded-xl max-w-xl text-sm leading-relaxed text-on-surface dark:text-[#f8fafc]">
+                        ${text}
+                    </div>
+                `;
+            }
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendQuickPrompt(prompt) {
+            document.getElementById('ai-chat-input').value = prompt;
+            sendChatMessage();
+        }
+
+        // --- 10. DECORATION: RIPPLE MICROINTERACTIONS ---
+        function initRipples() {
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('button');
+                if(!btn) return;
+                
+                const circle = document.createElement('span');
+                const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+                const radius = diameter / 2;
+
+                circle.style.width = circle.style.height = `${diameter}px`;
+                circle.style.left = `${e.clientX - btn.getBoundingClientRect().left - radius}px`;
+                circle.style.top = `${e.clientY - btn.getBoundingClientRect().top - radius}px`;
+                circle.classList.add('ripple');
+
+                const prevRipple = btn.getElementsByClassName('ripple')[0];
+                if (prevRipple) prevRipple.remove();
+
+                btn.appendChild(circle);
+            });
+        }
+    </script>
+</body>
+</html>
