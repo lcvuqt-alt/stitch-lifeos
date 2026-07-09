@@ -119,6 +119,12 @@
                 opacity: 0;
             }
         }
+        /* Dragging styles */
+        .dragging-task {
+            opacity: 0.4;
+            border-style: dashed !important;
+            border-color: #a855f7 !important;
+        }
     </style>
 </head>
 <body class="overflow-hidden h-screen select-none bg-surface text-on-surface dark:bg-[#03030c] dark:text-[#f8fafc]">
@@ -329,7 +335,7 @@
                             </div>
                             <div class="grid grid-cols-3 gap-4">
                                 <!-- Column: To Do -->
-                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'todo', 'Công việc')">
                                     <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
                                         <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded font-mono">CHƯA LÀM (TO DO)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-company-todo">0</span>
@@ -339,7 +345,7 @@
                                     </div>
                                 </div>
                                 <!-- Column: Doing -->
-                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'doing', 'Công việc')">
                                     <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
                                         <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded font-mono">ĐANG LÀM (DOING)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-company-doing">0</span>
@@ -349,7 +355,7 @@
                                     </div>
                                 </div>
                                 <!-- Column: Done -->
-                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'done', 'Công việc')">
                                     <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
                                         <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">ĐÃ XONG (DONE)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-company-done">0</span>
@@ -369,7 +375,7 @@
                             </div>
                             <div class="grid grid-cols-3 gap-4">
                                 <!-- Column: To Do -->
-                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'todo', 'Cá nhân')">
                                     <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
                                         <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded font-mono">CHƯA LÀM (TO DO)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-personal-todo">0</span>
@@ -379,7 +385,7 @@
                                     </div>
                                 </div>
                                 <!-- Column: Doing -->
-                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'doing', 'Cá nhân')">
                                     <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
                                         <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded font-mono">ĐANG LÀM (DOING)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-personal-doing">0</span>
@@ -389,7 +395,7 @@
                                     </div>
                                 </div>
                                 <!-- Column: Done -->
-                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden">
+                                <div class="glass-panel rounded-xl p-3 flex flex-col h-[280px] overflow-hidden" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'done', 'Cá nhân')">
                                     <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
                                         <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">ĐÃ XONG (DONE)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-personal-done">0</span>
@@ -799,17 +805,12 @@
             measurementId: "G-VZGFVR8Y78"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // Document Reference in Firestore
         const stateDocRef = doc(db, "app_data", "lifeos_state");
 
-        // Local state representation
         window.state = { tasks: [], events: [], diary: [], workflows: [] };
 
-        // CLEAN EMPTY DEFAULT STATE FOR RUNNING SYSTEM
         const DEFAULT_STATE = {
             tasks: [],
             events: [],
@@ -817,7 +818,6 @@
             workflows: []
         };
 
-        // Firebase Sync Status indicator updater
         function updateSyncIndicator(status, message) {
             const el = document.getElementById('sync-indicator');
             const txt = document.getElementById('sync-status-text');
@@ -836,7 +836,6 @@
             }
         }
 
-        // Realtime sync from Firebase
         onSnapshot(stateDocRef, (snap) => {
             if (snap.exists()) {
                 window.state = snap.data();
@@ -858,7 +857,6 @@
             updateSyncIndicator('error', 'Lỗi kết nối Firebase');
         });
 
-        // Global function to save state back to Firestore
         window.saveState = function() {
             updateSyncIndicator('syncing', 'Đang lưu lên Firebase...');
             setDoc(stateDocRef, window.state)
@@ -915,14 +913,11 @@
         function handleRoute() {
             const hash = window.location.hash.substring(1) || 'dashboard';
             
-            // Hide all views
             document.querySelectorAll('.view').forEach(view => view.classList.add('hidden'));
             
-            // Show target view
             const targetView = document.getElementById(`view-${hash}`);
             if (targetView) targetView.classList.remove('hidden');
 
-            // Toggle active sidebar link styling
             document.querySelectorAll('.nav-item').forEach(item => {
                 const route = item.getAttribute('data-route');
                 if (route === hash) {
@@ -1032,7 +1027,7 @@
             alert('Đã lưu ghi chú nhanh vào Nhật ký thành công!');
         }
 
-        // --- TASKS RENDER (COMPACT STYLE - 5 TASKS VIEWABLE) ---
+        // --- TASKS RENDER (SUPER FLAT CARD & DRAG DROP) ---
         let currentDocFilter = 'all';
         let globalSearchQuery = '';
 
@@ -1055,6 +1050,50 @@
             });
             select.value = currentDocFilter;
         }
+
+        // HTML5 Drag and Drop Handlers
+        function handleDragStart(ev, taskId) {
+            ev.dataTransfer.setData("text/plain", taskId);
+            ev.currentTarget.classList.add('dragging-task');
+        }
+
+        function handleDragEnd(ev) {
+            ev.currentTarget.classList.remove('dragging-task');
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function handleDrop(ev, targetStatus, categoryZone) {
+            ev.preventDefault();
+            const taskId = ev.dataTransfer.getData("text/plain");
+            const task = window.state.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            // Map statuses for value comparison
+            const statusValues = { 'todo': 1, 'doing': 2, 'done': 3 };
+            const currentVal = statusValues[task.status] || 1;
+            const targetVal = statusValues[targetStatus] || 1;
+
+            // Confirm on drag back
+            if (targetVal < currentVal) {
+                if (!confirm("Bạn có thực sự muốn chuyển ngược trạng thái công việc này?")) {
+                    renderTasks(); // redrawn to clear any temporary UI styles
+                    return;
+                }
+            }
+
+            // Update status and category (ensures category is kept or adjusted if dragged inside enterprise/personal zones)
+            task.status = targetStatus;
+            task.category = categoryZone;
+            window.saveState();
+        }
+
+        window.handleDragStart = handleDragStart;
+        window.handleDragEnd = handleDragEnd;
+        window.allowDrop = allowDrop;
+        window.handleDrop = handleDrop;
 
         function renderTasks() {
             const panels = {
@@ -1100,21 +1139,16 @@
 
                 const prioColor = task.priority === 'Cao' ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]' : task.priority === 'Trung bình' ? 'bg-yellow-500 shadow-[0_0_8px_#facc15]' : 'bg-emerald-500 shadow-[0_0_8px_#10b981]';
                 
-                let actionBtnsHtml = '';
-                if (status === 'todo') {
-                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'doing')" class="bg-gradient-to-r from-primary to-primary-container text-white text-[8px] font-bold px-1.5 py-0.5 rounded hover:brightness-110 transition-all shrink-0">Bắt đầu</button>`;
-                } else if (status === 'doing') {
-                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'done')" class="bg-emerald-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded hover:bg-emerald-700 transition-all shrink-0">Xong</button>`;
-                } else {
-                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'todo')" class="text-on-surface-variant hover:text-primary text-[8px] font-semibold shrink-0">Làm lại</button>`;
-                }
-
                 const cardStyle = status === 'done' ? 'opacity-40 bg-black/5 dark:bg-[#0d0d21]/30' : 'bg-white dark:bg-[#0f0f2d]/80 border-outline-variant hover:border-primary/50';
 
-                // SUPER COMPACT CARD (Height around ~65px - 70px)
+                // SUPER FLAT TASK CARD (Height around ~48px, Actions inline on right)
                 containerEl.innerHTML += `
-                    <div class="border border-outline-variant dark:border-white/5 p-2 rounded shadow-sm transition-all flex flex-col justify-between space-y-1.5 ${cardStyle}">
-                        <!-- Top Row: Date, Priority indicator and Doc indicator together -->
+                    <div draggable="true" 
+                         ondragstart="handleDragStart(event, '${task.id}')" 
+                         ondragend="handleDragEnd(event)"
+                         class="border border-outline-variant dark:border-white/5 p-2 rounded shadow-sm transition-all flex flex-col justify-between space-y-1.5 cursor-grab active:cursor-grabbing ${cardStyle}">
+                        
+                        <!-- Top Row: Date & Priority & Doc tags -->
                         <div class="flex items-center justify-between text-[8px] text-on-surface-variant font-mono">
                             <span>${task.duedate}</span>
                             <div class="flex items-center space-x-2">
@@ -1126,17 +1160,12 @@
                             </div>
                         </div>
                         
-                        <!-- Middle Row: Task Title -->
-                        <h4 class="text-[11px] font-semibold text-on-surface dark:text-[#f8fafc] leading-tight truncate ${status === 'done' ? 'line-through opacity-50' : ''}" title="${task.name}">${task.name}</h4>
-                        
-                        <!-- Bottom Row: Inline action controls -->
-                        <div class="flex items-center justify-between border-t border-outline-variant/30 dark:border-white/5 pt-1.5 shrink-0">
-                            <div class="space-x-2 text-[8px] font-bold">
-                                <button onclick="openEditTaskModal('${task.id}')" class="text-primary hover:underline">SỬA</button>
-                                <button onclick="deleteTask('${task.id}')" class="text-error hover:underline">XÓA</button>
-                            </div>
-                            <div>
-                                ${actionBtnsHtml}
+                        <!-- Bottom Row: Title on Left, Action buttons inline on Right -->
+                        <div class="flex items-center justify-between space-x-3">
+                            <h4 class="text-[11px] font-semibold text-on-surface dark:text-[#f8fafc] leading-tight truncate flex-1 ${status === 'done' ? 'line-through opacity-50' : ''}" title="${task.name}">${task.name}</h4>
+                            <div class="shrink-0 flex items-center space-x-1 text-[8px] font-bold">
+                                <button onclick="event.stopPropagation(); openEditTaskModal('${task.id}')" class="text-primary hover:underline px-1 py-0.5 rounded hover:bg-black/5 dark:hover:bg-white/5">SỬA</button>
+                                <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="text-error hover:underline px-1 py-0.5 rounded hover:bg-black/5 dark:hover:bg-white/5">XÓA</button>
                             </div>
                         </div>
                     </div>
@@ -1240,7 +1269,6 @@
             document.getElementById('task-modal').classList.add('hidden');
         }
 
-        // Apply workflow correctly under empty defaults
         function handleTaskSubmit(e) {
             e.preventDefault();
             const editId = document.getElementById('task-edit-id').value;
@@ -1412,7 +1440,6 @@
             document.getElementById('event-modal').classList.add('hidden');
         }
 
-        // Calendar Form Submit
         function handleEventSubmit(e) {
             e.preventDefault();
             window.state.events.push({
