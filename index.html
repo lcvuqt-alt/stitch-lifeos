@@ -122,6 +122,12 @@
     </style>
 </head>
 <body class="overflow-hidden h-screen select-none bg-surface text-on-surface dark:bg-[#03030c] dark:text-[#f8fafc]">
+    <!-- Firebase Sync Indicator -->
+    <div id="sync-indicator" class="fixed bottom-4 right-4 bg-primary text-white text-xs px-3 py-1.5 rounded-full shadow-lg z-50 flex items-center space-x-1.5 opacity-90 transition-opacity duration-300">
+        <span class="animate-ping w-2 h-2 rounded-full bg-white inline-block"></span>
+        <span id="sync-status-text">Đang tải Firebase...</span>
+    </div>
+
     <div class="flex h-full w-full overflow-hidden">
         <!-- Sidebar Navigation -->
         <aside class="w-64 bg-surface-container-low dark:bg-[#050512]/90 border-r border-outline-variant dark:border-[#2d2d59] flex flex-col justify-between h-full z-30 shrink-0 transition-colors duration-300">
@@ -490,7 +496,7 @@
                                         </button>
                                     </div>
                                 </div>
-                                <!-- Mood & Tags selection (FLEX WRAP SAFE) -->
+                                <!-- Mood & Tags selection -->
                                 <div class="flex flex-wrap gap-4 text-sm shrink-0 border-b border-outline-variant dark:border-white/5 pb-2">
                                     <div class="flex items-center space-x-2">
                                         <span class="text-xs text-on-surface-variant dark:text-[#94a3b8] font-mono">TÂM TRẠNG:</span>
@@ -643,7 +649,7 @@
         </div>
     </div>
 
-    <!-- MODAL: ADD/EDIT TASK (ADVANCED) -->
+    <!-- MODAL: ADD/EDIT TASK -->
     <div id="task-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50">
         <div class="glass-panel rounded-xl w-[480px] p-6 space-y-4">
             <div class="flex justify-between items-center pb-2 border-b border-outline-variant dark:border-[#2d2d59]">
@@ -777,9 +783,32 @@
         </div>
     </div>
 
-    <!-- Script Application Logic -->
-    <script>
-        // --- 1. STATE MANAGEMENT & STORAGE ---
+    <!-- Firebase App & Firestore SDKs from CDN via Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDr9Vwby6NahP1QrFguB8pnx9dthzDPOtI",
+            authDomain: "stitch-lifeos.firebaseapp.com",
+            projectId: "stitch-lifeos",
+            storageBucket: "stitch-lifeos.firebasestorage.app",
+            messagingSenderId: "846706539422",
+            appId: "1:846706539422:web:cf809e41219b1acce8748f",
+            measurementId: "G-VZGFVR8Y78"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Document Reference in Firestore (Global Shared State for simplicity)
+        const stateDocRef = doc(db, "app_data", "lifeos_state");
+
+        // Local state representation
+        window.state = { tasks: [], events: [], diary: [], workflows: [] };
+
         const DEFAULT_STATE = {
             tasks: [
                 { id: '1', name: 'Đăng ký kiểm tra chất lượng chuyên ngành', category: 'Công việc', priority: 'Cao', duedate: '2026-07-09', status: 'todo', documentNo: 'IMP-2026-09A', workflowId: 'wf-import' },
@@ -800,29 +829,73 @@
             ]
         };
 
-        let state = JSON.parse(localStorage.getItem('lifeos_state')) || DEFAULT_STATE;
-
-        // Migrating old completed states if any
-        state.tasks.forEach(t => {
-            if (t.status === undefined) {
-                t.status = t.completed ? 'done' : 'todo';
-                delete t.completed;
+        // Firebase Sync Status indicator updater
+        function updateSyncIndicator(status, message) {
+            const el = document.getElementById('sync-indicator');
+            const txt = document.getElementById('sync-status-text');
+            txt.innerText = message;
+            if (status === 'synced') {
+                el.className = "fixed bottom-4 right-4 bg-green-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg z-50 flex items-center space-x-1.5 opacity-80 transition-opacity duration-300";
+                setTimeout(() => {
+                    el.style.opacity = '0';
+                }, 3000);
+            } else if (status === 'syncing') {
+                el.style.opacity = '0.9';
+                el.className = "fixed bottom-4 right-4 bg-primary text-white text-xs px-3 py-1.5 rounded-full shadow-lg z-50 flex items-center space-x-1.5 opacity-90 transition-opacity duration-300";
+            } else {
+                el.style.opacity = '0.9';
+                el.className = "fixed bottom-4 right-4 bg-rose-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg z-50 flex items-center space-x-1.5 opacity-90 transition-opacity duration-300";
             }
+        }
+
+        // Realtime sync from Firebase
+        onSnapshot(stateDocRef, (snap) => {
+            if (snap.exists()) {
+                window.state = snap.data();
+                updateSyncIndicator('synced', 'Đã đồng bộ Firebase');
+            } else {
+                // Initialize default state on Firestore if it doesn't exist
+                updateSyncIndicator('syncing', 'Đang khởi tạo database...');
+                setDoc(stateDocRef, DEFAULT_STATE).then(() => {
+                    window.state = DEFAULT_STATE;
+                    updateSyncIndicator('synced', 'Đã khởi tạo database');
+                }).catch((err) => {
+                    console.error("Initialization error:", err);
+                    updateSyncIndicator('error', 'Lỗi khởi tạo database');
+                });
+            }
+            // Trigger UI updates
+            window.renderAll();
+            window.handleRoute();
+        }, (error) => {
+            console.error("Firestore Listen error:", error);
+            updateSyncIndicator('error', 'Lỗi kết nối Firebase');
         });
 
-        function saveState() {
-            localStorage.setItem('lifeos_state', JSON.stringify(state));
-            renderAll();
-        }
+        // Global function to save state back to Firestore
+        window.saveState = function() {
+            updateSyncIndicator('syncing', 'Đang lưu lên Firebase...');
+            setDoc(stateDocRef, window.state)
+                .then(() => {
+                    updateSyncIndicator('synced', 'Đã lưu lên Firebase');
+                })
+                .catch(err => {
+                    console.error("Save error: ", err);
+                    updateSyncIndicator('error', 'Lỗi lưu dữ liệu');
+                });
+        };
 
-        function resetData() {
+        window.resetData = function() {
             if(confirm("Bạn có chắc chắn muốn đặt lại dữ liệu về trạng thái ban đầu?")) {
-                state = DEFAULT_STATE;
-                saveState();
+                window.state = DEFAULT_STATE;
+                window.saveState();
             }
         }
+    </script>
 
-        // --- Theme Engine (Light/Dark Toggle) ---
+    <!-- UI Logic Script -->
+    <script>
+        // --- Theme Engine ---
         function initTheme() {
             const savedTheme = localStorage.getItem('lifeos_theme') || 'dark';
             const htmlEl = document.documentElement;
@@ -852,7 +925,7 @@
             }
         }
 
-        // --- 2. HASH ROUTER ---
+        // --- HASH ROUTER ---
         function handleRoute() {
             const hash = window.location.hash.substring(1) || 'dashboard';
             
@@ -879,16 +952,17 @@
             if (hash === 'workflows') renderWorkflows();
         }
 
+        window.handleRoute = handleRoute;
+
         window.addEventListener('hashchange', handleRoute);
         window.addEventListener('load', () => {
             initTheme();
             handleRoute();
             initClock();
-            renderAll();
             initRipples();
         });
 
-        // --- 3. SYSTEM CLOCK ---
+        // --- SYSTEM CLOCK ---
         function initClock() {
             setInterval(() => {
                 const now = new Date();
@@ -897,8 +971,9 @@
             }, 1000);
         }
 
-        // --- 4. DATA RENDER PIPELINES ---
+        // --- DATA RENDER PIPELINES ---
         function renderAll() {
+            if (!window.state) return;
             renderDashboard();
             renderTasks();
             renderDiary();
@@ -906,18 +981,20 @@
             renderDocFilterOptions();
         }
 
+        window.renderAll = renderAll;
+
         // --- DASHBOARD RENDER ---
         function renderDashboard() {
             const todayStr = new Date().toISOString().split('T')[0];
-            const activeTasks = state.tasks.filter(t => t.status !== 'done');
+            const activeTasks = window.state.tasks.filter(t => t.status !== 'done');
             
             document.getElementById('stat-tasks-today').innerText = activeTasks.length;
             
-            const uniqueDocs = [...new Set(state.tasks.filter(t => t.documentNo).map(t => t.documentNo))].length;
+            const uniqueDocs = [...new Set(window.state.tasks.filter(t => t.documentNo).map(t => t.documentNo))].length;
             document.getElementById('stat-orders-count').innerText = uniqueDocs;
-            document.getElementById('stat-workflows-count').innerText = state.workflows.length;
+            document.getElementById('stat-workflows-count').innerText = window.state.workflows.length;
 
-            const todayTasks = state.tasks.filter(t => t.duedate === todayStr);
+            const todayTasks = window.state.tasks.filter(t => t.duedate === todayStr);
             const completedToday = todayTasks.filter(t => t.status === 'done').length;
 
             const totalTasks = todayTasks.length;
@@ -929,7 +1006,7 @@
             const scheduleList = document.getElementById('dashboard-schedule-list');
             scheduleList.innerHTML = '';
 
-            const todayEvents = state.events.filter(e => e.date === todayStr);
+            const todayEvents = window.state.events.filter(e => e.date === todayStr);
             const mergedList = [
                 ...todayEvents.map(e => ({ type: 'event', time: e.time, name: e.name, extra: e.desc, icon: 'schedule', color: 'border-primary' })),
                 ...todayTasks.map(t => ({ type: 'task', time: 'Cả ngày', name: t.name, extra: t.documentNo ? `Số chứng từ: ${t.documentNo}` : 'Đầu việc lẻ', icon: t.status === 'done' ? 'task_alt' : t.status === 'doing' ? 'hourglass_empty' : 'circle', color: 'border-tertiary', completed: t.status === 'done' }))
@@ -963,13 +1040,13 @@
                 mood: '😐',
                 tags: '#quicknote'
             };
-            state.diary.unshift(newEntry);
+            window.state.diary.unshift(newEntry);
             document.getElementById('dashboard-quick-note').value = '';
-            saveState();
+            window.saveState();
             alert('Đã lưu ghi chú nhanh vào Nhật ký thành công!');
         }
 
-        // --- TASKS RENDER (ANTI-OVERLAP GRID) ---
+        // --- TASKS RENDER ---
         let currentDocFilter = 'all';
         let globalSearchQuery = '';
 
@@ -986,7 +1063,7 @@
         function renderDocFilterOptions() {
             const select = document.getElementById('task-doc-filter');
             select.innerHTML = '<option value="all">Hiển thị tất cả</option>';
-            const docs = [...new Set(state.tasks.filter(t => t.documentNo).map(t => t.documentNo))];
+            const docs = [...new Set(window.state.tasks.filter(t => t.documentNo).map(t => t.documentNo))];
             docs.forEach(doc => {
                 select.innerHTML += `<option value="${doc}">${doc}</option>`;
             });
@@ -1010,7 +1087,7 @@
                 });
             });
 
-            let filtered = state.tasks;
+            let filtered = window.state.tasks;
             if (globalSearchQuery) {
                 filtered = filtered.filter(t => 
                     t.name.toLowerCase().includes(globalSearchQuery) || 
@@ -1098,17 +1175,17 @@
         }
 
         function updateTaskStatus(id, newStatus) {
-            const task = state.tasks.find(t => t.id === id);
+            const task = window.state.tasks.find(t => t.id === id);
             if (task) {
                 task.status = newStatus;
-                saveState();
+                window.saveState();
             }
         }
 
         function deleteTask(id) {
             if (confirm('Bạn có thực sự muốn xóa công việc này?')) {
-                state.tasks = state.tasks.filter(t => t.id !== id);
-                saveState();
+                window.state.tasks = window.state.tasks.filter(t => t.id !== id);
+                window.saveState();
             }
         }
 
@@ -1137,7 +1214,7 @@
                 
                 const selectWf = document.getElementById('task-workflow-id');
                 selectWf.innerHTML = '';
-                state.workflows.forEach(wf => {
+                window.state.workflows.forEach(wf => {
                     selectWf.innerHTML += `<option value="${wf.id}">${wf.name}</option>`;
                 });
             }
@@ -1157,7 +1234,7 @@
         }
 
         function openEditTaskModal(id) {
-            const task = state.tasks.find(t => t.id === id);
+            const task = window.state.tasks.find(t => t.id === id);
             if (!task) return;
             document.getElementById('task-modal-title').innerText = "Chỉnh sửa công việc";
             document.getElementById('task-edit-id').value = task.id;
@@ -1187,7 +1264,7 @@
             const taskDue = document.getElementById('task-duedate').value;
 
             if (editId) {
-                const task = state.tasks.find(t => t.id === editId);
+                const task = window.state.tasks.find(t => t.id === editId);
                 if (task) {
                     task.name = taskName;
                     task.documentNo = docNo;
@@ -1197,7 +1274,7 @@
                 }
             } else {
                 if (currentTaskFormMode === 'single') {
-                    state.tasks.push({
+                    window.state.tasks.push({
                         id: Date.now().toString(),
                         name: taskName,
                         category: taskCat,
@@ -1209,10 +1286,10 @@
                     });
                 } else {
                     const wfId = document.getElementById('task-workflow-id').value;
-                    const workflow = state.workflows.find(w => w.id === wfId);
+                    const workflow = window.state.workflows.find(w => w.id === wfId);
                     if (workflow) {
                         workflow.tasks.forEach((taskNameItem, index) => {
-                            state.tasks.push({
+                            window.state.tasks.push({
                                 id: `${Date.now()}-${index}`,
                                 name: taskNameItem,
                                 category: taskCat,
@@ -1226,7 +1303,7 @@
                     }
                 }
             }
-            saveState();
+            window.saveState();
             closeTaskModal();
         }
 
@@ -1280,8 +1357,8 @@
 
                 cell.className = `bg-white dark:bg-[#0d0d21]/60 p-2 border-t border-r border-outline-variant dark:border-[#2d2d59] hover:bg-black/5 dark:hover:bg-white/5 transition-all flex flex-col justify-between cursor-pointer ${isToday ? 'ring-2 ring-primary ring-inset' : ''}`;
                 
-                const eventsCount = state.events.filter(e => e.date === dateStr).length;
-                const tasksCount = state.tasks.filter(t => t.duedate === dateStr).length;
+                const eventsCount = window.state.events.filter(e => e.date === dateStr).length;
+                const tasksCount = window.state.tasks.filter(t => t.duedate === dateStr).length;
 
                 cell.innerHTML = `
                     <div class="flex justify-between items-center">
@@ -1307,7 +1384,7 @@
             const list = document.getElementById('selected-day-events-list');
             list.innerHTML = '';
 
-            const dayEvents = state.events.filter(e => e.date === dateStr);
+            const dayEvents = window.state.events.filter(e => e.date === dateStr);
             if (dayEvents.length === 0) {
                 list.innerHTML = `<p class="text-xs text-on-surface-variant font-mono py-4 text-center">Không có sự kiện.</p>`;
             } else {
@@ -1330,8 +1407,8 @@
 
         function deleteEvent(id) {
             if (confirm('Bạn có muốn xóa sự kiện này?')) {
-                state.events = state.events.filter(e => e.id !== id);
-                saveState();
+                window.state.events = window.state.events.filter(e => e.id !== id);
+                window.saveState();
                 if (selectedDateStr) selectCalendarDay(selectedDateStr);
             }
         }
@@ -1350,14 +1427,14 @@
 
         function handleEventSubmit(e) {
             e.preventDefault();
-            state.events.push({
+            window.state.events.push({
                 id: Date.now().toString(),
                 name: document.getElementById('event-name').value,
                 date: document.getElementById('event-date').value,
                 time: document.getElementById('event-time').value,
                 desc: document.getElementById('event-desc').value
             });
-            saveState();
+            window.saveState();
             closeEventModal();
             if (selectedDateStr) selectCalendarDay(selectedDateStr);
         }
@@ -1369,7 +1446,7 @@
             const list = document.getElementById('diary-list-container');
             list.innerHTML = '';
 
-            state.diary.forEach(entry => {
+            window.state.diary.forEach(entry => {
                 const activeStyle = entry.id === selectedDiaryId ? 'bg-black/5 dark:bg-white/10 ring-1 ring-primary' : '';
                 list.innerHTML += `
                     <div onclick="selectDiaryEntry('${entry.id}')" class="p-3 border border-outline-variant dark:border-white/5 rounded-lg bg-white/2 dark:bg-white/2 hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer ${activeStyle}">
@@ -1386,7 +1463,7 @@
 
         function selectDiaryEntry(id) {
             selectedDiaryId = id;
-            const entry = state.diary.find(d => d.id === id);
+            const entry = window.state.diary.find(d => d.id === id);
             if (!entry) return;
 
             document.getElementById('diary-no-select-placeholder').classList.add('hidden');
@@ -1407,20 +1484,20 @@
                 mood: '😊',
                 tags: '#customs'
             };
-            state.diary.unshift(newEntry);
-            saveState();
+            window.state.diary.unshift(newEntry);
+            window.saveState();
             selectDiaryEntry(newEntry.id);
         }
 
         function saveDiaryEntry() {
             if (!selectedDiaryId) return;
-            const entry = state.diary.find(d => d.id === selectedDiaryId);
+            const entry = window.state.diary.find(d => d.id === selectedDiaryId);
             if (entry) {
                 entry.title = document.getElementById('diary-title-input').value;
                 entry.mood = document.getElementById('diary-mood-select').value;
                 entry.tags = document.getElementById('diary-tags-input').value;
                 entry.content = document.getElementById('diary-content-input').value;
-                saveState();
+                window.saveState();
                 alert('Đã lưu trang viết thành công!');
             }
         }
@@ -1428,17 +1505,17 @@
         function deleteDiaryEntry() {
             if (!selectedDiaryId) return;
             if (confirm('Bạn có muốn xóa bài nhật ký này?')) {
-                state.diary = state.diary.filter(d => d.id !== selectedDiaryId);
+                window.state.diary = window.state.diary.filter(d => d.id !== selectedDiaryId);
                 selectedDiaryId = null;
                 document.getElementById('diary-no-select-placeholder').classList.remove('hidden');
-                saveState();
+                window.saveState();
             }
         }
 
         // --- 7. ANALYTICS LOGIC ---
         function renderAnalytics() {
             const categories = {};
-            state.tasks.forEach(t => {
+            window.state.tasks.forEach(t => {
                 categories[t.category] = (categories[t.category] || 0) + 1;
             });
 
@@ -1453,7 +1530,7 @@
 
             keys.forEach(cat => {
                 const count = categories[cat];
-                const percentage = Math.round((count / state.tasks.length) * 100);
+                const percentage = Math.round((count / window.state.tasks.length) * 100);
                 container.innerHTML += `
                     <div>
                         <div class="flex justify-between items-center text-xs font-mono text-on-surface-variant dark:text-[#94a3b8] mb-1">
@@ -1473,9 +1550,9 @@
             const container = document.getElementById('workflows-grid-container');
             container.innerHTML = '';
 
-            state.workflows.forEach(wf => {
-                const usageCount = state.tasks.filter(t => t.workflowId === wf.id).length;
-                const uniqueBills = [...new Set(state.tasks.filter(t => t.workflowId === wf.id).map(t => t.documentNo))].filter(b => b).length;
+            window.state.workflows.forEach(wf => {
+                const usageCount = window.state.tasks.filter(t => t.workflowId === wf.id).length;
+                const uniqueBills = [...new Set(window.state.tasks.filter(t => t.workflowId === wf.id).map(t => t.documentNo))].filter(b => b).length;
                 
                 container.innerHTML += `
                     <div class="glass-panel p-6 rounded-xl flex flex-col justify-between min-h-64 shadow-sm relative overflow-hidden">
@@ -1509,8 +1586,8 @@
 
         function deleteWorkflow(id) {
             if(confirm("Bạn có muốn xóa kịch bản quy trình này?")) {
-                state.workflows = state.workflows.filter(w => w.id !== id);
-                saveState();
+                window.state.workflows = window.state.workflows.filter(w => w.id !== id);
+                window.saveState();
                 renderWorkflows();
             }
         }
@@ -1544,14 +1621,14 @@
                 return;
             }
 
-            state.workflows.push({
+            window.state.workflows.push({
                 id: 'wf-' + Date.now(),
                 name: name,
                 description: desc,
                 tasks: tasks
             });
 
-            saveState();
+            window.saveState();
             closeWorkflowModal();
             renderWorkflows();
         }
@@ -1568,9 +1645,9 @@
             setTimeout(() => {
                 let response = "Tôi đã tiếp nhận ý kiến của bạn. Tôi có thể tổng hợp báo cáo hoặc lọc các đầu việc theo số chứng từ của bạn.";
                 if(text.includes('Tóm tắt')) {
-                    const total = state.tasks.length;
-                    const active = state.tasks.filter(t => t.status !== 'done').length;
-                    const orders = [...new Set(state.tasks.filter(t => t.documentNo).map(t => t.documentNo))].filter(b => b);
+                    const total = window.state.tasks.length;
+                    const active = window.state.tasks.filter(t => t.status !== 'done').length;
+                    const orders = [...new Set(window.state.tasks.filter(t => t.documentNo).map(t => t.documentNo))].filter(b => b);
                     response = `Tôi đã phân tích: Hệ thống đang quản lý ${total} công việc trên ${orders.length} lô vận đơn chứng từ khác nhau (${orders.join(', ')}). Hiện tại còn ${active} đầu việc đang cần xử lý. Khuyên bạn nên hoàn thành nốt quy trình của lô đang dở dang.`;
                 } else if (text.includes('tiến độ')) {
                     response = "Báo cáo tiến độ: Quy trình Nhập khẩu đang hoàn thành đúng hạn 80%, các đầu việc Quy trình Xuất khẩu có xu hướng trễ 1 ngày do chậm khâu gom Commercial Invoice.";
@@ -1610,7 +1687,7 @@
             sendChatMessage();
         }
 
-        // --- 10. DECORATION: RIPPLE MICROINTERACTIONS ---
+        // --- 10. DECORATION: RIPPLE ---
         function initRipples() {
             document.addEventListener('click', function(e) {
                 const btn = e.target.closest('button');
