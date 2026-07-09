@@ -1018,6 +1018,10 @@
         }
 
         // Calendar operations inside Module
+        window.currentCalYear = 2026;
+        window.currentCalMonth = 6; // Tháng 7 (0-indexed)
+        window.selectedDateStr = null;
+
         window.handleEventSubmit = function(e) {
             e.preventDefault();
             window.state.events.push({
@@ -1029,31 +1033,31 @@
             });
             window.saveState();
             closeEventModal();
-            if (selectedDateStr) selectCalendarDay(selectedDateStr);
+            if (window.selectedDateStr) window.selectCalendarDay(window.selectedDateStr);
         }
 
         window.deleteEvent = function(id) {
             if (confirm('Bạn có muốn xóa sự kiện này?')) {
                 window.state.events = window.state.events.filter(e => e.id !== id);
                 window.saveState();
-                if (selectedDateStr) selectCalendarDay(selectedDateStr);
+                if (window.selectedDateStr) window.selectCalendarDay(window.selectedDateStr);
             }
         }
 
         window.changeMonth = function(direction) {
-            currentCalMonth += direction;
-            if (currentCalMonth < 0) {
-                currentCalMonth = 11;
-                currentCalYear -= 1;
-            } else if (currentCalMonth > 11) {
-                currentCalMonth = 0;
-                currentCalYear += 1;
+            window.currentCalMonth += direction;
+            if (window.currentCalMonth < 0) {
+                window.currentCalMonth = 11;
+                window.currentCalYear -= 1;
+            } else if (window.currentCalMonth > 11) {
+                window.currentCalMonth = 0;
+                window.currentCalYear += 1;
             }
-            renderCalendar();
+            window.renderCalendar();
         }
 
         window.selectCalendarDay = function(dateStr) {
-            selectedDateStr = dateStr;
+            window.selectedDateStr = dateStr;
             const parsed = new Date(dateStr);
             document.getElementById('selected-date-label').innerText = parsed.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             
@@ -1113,7 +1117,7 @@
         window.renderCalendar = function() {
             const header = document.getElementById('calendar-month-year');
             const monthsVi = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
-            header.innerText = `${monthsVi[currentCalMonth]}, ${currentCalYear}`;
+            header.innerText = `${monthsVi[window.currentCalMonth]}, ${window.currentCalYear}`;
 
             const container = document.getElementById('calendar-grid-container');
             if (!container) return;
@@ -1122,8 +1126,8 @@
             const oldDays = container.querySelectorAll('div:not(.calendar-header)');
             oldDays.forEach(day => day.remove());
 
-            const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
-            const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+            const firstDay = new Date(window.currentCalYear, window.currentCalMonth, 1).getDay();
+            const daysInMonth = new Date(window.currentCalYear, window.currentCalMonth + 1, 0).getDate();
 
             for(let i = 0; i < firstDay; i++) {
                 const cell = document.createElement('div');
@@ -1133,7 +1137,7 @@
 
             for(let day = 1; day <= daysInMonth; day++) {
                 const cell = document.createElement('div');
-                const dateStr = `${currentCalYear}-${(currentCalMonth+1).toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
+                const dateStr = `${window.currentCalYear}-${(window.currentCalMonth+1).toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
                 
                 let isToday = false;
                 const todayStr = new Date().toISOString().split('T')[0];
@@ -1161,7 +1165,7 @@
         }
 
         window.openAddEventModal = function() {
-            document.getElementById('event-date').value = selectedDateStr || new Date().toISOString().split('T')[0];
+            document.getElementById('event-date').value = window.selectedDateStr || new Date().toISOString().split('T')[0];
             document.getElementById('event-name').value = '';
             document.getElementById('event-time').value = '09:00';
             document.getElementById('event-desc').value = '';
