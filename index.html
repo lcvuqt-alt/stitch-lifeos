@@ -1110,6 +1110,66 @@
             }
         }
 
+        window.renderCalendar = function() {
+            const header = document.getElementById('calendar-month-year');
+            const monthsVi = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+            header.innerText = `${monthsVi[currentCalMonth]}, ${currentCalYear}`;
+
+            const container = document.getElementById('calendar-grid-container');
+            while (container.children.length > 7) {
+                container.removeChild(container.lastChild);
+            }
+
+            const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
+            const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+
+            for(let i = 0; i < firstDay; i++) {
+                const cell = document.createElement('div');
+                cell.className = "bg-surface-container-low dark:bg-[#0a0a1f]/40 p-4 border-t border-r border-outline-variant dark:border-[#2d2d59] opacity-20";
+                container.appendChild(cell);
+            }
+
+            for(let day = 1; day <= daysInMonth; day++) {
+                const cell = document.createElement('div');
+                const dateStr = `${currentCalYear}-${(currentCalMonth+1).toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
+                
+                let isToday = false;
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (dateStr === todayStr) isToday = true;
+
+                cell.className = `bg-white dark:bg-[#0d0d21]/60 p-2 border-t border-r border-outline-variant dark:border-[#2d2d59] hover:bg-black/5 dark:hover:bg-white/5 transition-all flex flex-col justify-between cursor-pointer ${isToday ? 'ring-2 ring-primary ring-inset' : ''}`;
+                
+                const eventsCount = window.state.events.filter(e => e.date === dateStr).length;
+                const tasksCount = window.state.tasks.filter(t => t.duedate === dateStr && t.status !== 'pending').length;
+
+                cell.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-mono text-xs font-bold text-on-surface dark:text-[#f8fafc]">${day}</span>
+                        ${isToday ? '<span class="bg-primary text-white text-[8px] font-mono font-bold px-1 py-0.2 rounded uppercase">Hôm nay</span>' : ''}
+                    </div>
+                    <div class="flex flex-col space-y-1">
+                        ${eventsCount > 0 ? `<span class="bg-primary text-white text-[8px] font-bold px-1 rounded block truncate">${eventsCount} sự kiện</span>` : ''}
+                        ${tasksCount > 0 ? `<span class="bg-green-600 text-white text-[8px] font-bold px-1 rounded block truncate">${tasksCount} tasks</span>` : ''}
+                    </div>
+                `;
+
+                cell.onclick = () => window.selectCalendarDay(dateStr);
+                container.appendChild(cell);
+            }
+        }
+
+        window.openAddEventModal = function() {
+            document.getElementById('event-date').value = selectedDateStr || new Date().toISOString().split('T')[0];
+            document.getElementById('event-name').value = '';
+            document.getElementById('event-time').value = '09:00';
+            document.getElementById('event-desc').value = '';
+            document.getElementById('event-modal').classList.remove('hidden');
+        }
+
+        window.closeEventModal = function() {
+            document.getElementById('event-modal').classList.add('hidden');
+        }
+
         // Diary operations
         window.saveDiaryEntry = function() {
             if (!selectedDiaryId) return;
@@ -1323,7 +1383,7 @@
                 }
             });
 
-            if (hash === 'calendar') renderCalendar();
+            if (hash === 'calendar') window.renderCalendar();
             if (hash === 'workflows') renderWorkflows();
         }
 
@@ -1672,67 +1732,6 @@
 
         function toggleQuickTaskModal() {
             openAddTaskModal();
-        }
-
-        // --- CALENDAR GRID INCLUDES (WITHOUT MODULE API DEPENDENCY DIRECTLY) ---
-        function renderCalendar() {
-            const header = document.getElementById('calendar-month-year');
-            const monthsVi = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
-            header.innerText = `${monthsVi[currentCalMonth]}, ${currentCalYear}`;
-
-            const container = document.getElementById('calendar-grid-container');
-            while (container.children.length > 7) {
-                container.removeChild(container.lastChild);
-            }
-
-            const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
-            const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
-
-            for(let i = 0; i < firstDay; i++) {
-                const cell = document.createElement('div');
-                cell.className = "bg-surface-container-low dark:bg-[#0a0a1f]/40 p-4 border-t border-r border-outline-variant dark:border-[#2d2d59] opacity-20";
-                container.appendChild(cell);
-            }
-
-            for(let day = 1; day <= daysInMonth; day++) {
-                const cell = document.createElement('div');
-                const dateStr = `${currentCalYear}-${(currentCalMonth+1).toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
-                
-                let isToday = false;
-                const todayStr = new Date().toISOString().split('T')[0];
-                if (dateStr === todayStr) isToday = true;
-
-                cell.className = `bg-white dark:bg-[#0d0d21]/60 p-2 border-t border-r border-outline-variant dark:border-[#2d2d59] hover:bg-black/5 dark:hover:bg-white/5 transition-all flex flex-col justify-between cursor-pointer ${isToday ? 'ring-2 ring-primary ring-inset' : ''}`;
-                
-                const eventsCount = window.state.events.filter(e => e.date === dateStr).length;
-                const tasksCount = window.state.tasks.filter(t => t.duedate === dateStr && t.status !== 'pending').length;
-
-                cell.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <span class="font-mono text-xs font-bold text-on-surface dark:text-[#f8fafc]">${day}</span>
-                        ${isToday ? '<span class="bg-primary text-white text-[8px] font-mono font-bold px-1 py-0.2 rounded uppercase">Hôm nay</span>' : ''}
-                    </div>
-                    <div class="flex flex-col space-y-1">
-                        ${eventsCount > 0 ? `<span class="bg-primary text-white text-[8px] font-bold px-1 rounded block truncate">${eventsCount} sự kiện</span>` : ''}
-                        ${tasksCount > 0 ? `<span class="bg-green-600 text-white text-[8px] font-bold px-1 rounded block truncate">${tasksCount} tasks</span>` : ''}
-                    </div>
-                `;
-
-                cell.onclick = () => selectCalendarDay(dateStr);
-                container.appendChild(cell);
-            }
-        }
-
-        function openAddEventModal() {
-            document.getElementById('event-date').value = selectedDateStr || new Date().toISOString().split('T')[0];
-            document.getElementById('event-name').value = '';
-            document.getElementById('event-time').value = '09:00';
-            document.getElementById('event-desc').value = '';
-            document.getElementById('event-modal').classList.remove('hidden');
-        }
-
-        function closeEventModal() {
-            document.getElementById('event-modal').classList.add('hidden');
         }
 
         // --- 6. DIARY ARCHIVE INCLUDES ---
