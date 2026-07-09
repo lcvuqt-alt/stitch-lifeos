@@ -34,9 +34,9 @@
                         mono: ['JetBrains Mono', 'monospace']
                     },
                     borderRadius: {
-                        DEFAULT: '8px',
-                        'lg': '12px',
-                        'xl': '16px'
+                        DEFAULT: '6px',
+                        'lg': '10px',
+                        'xl': '14px'
                     }
                 }
             }
@@ -52,8 +52,8 @@
             transition: background-color 0.3s ease, color 0.3s ease;
         }
         .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;
@@ -334,7 +334,7 @@
                                         <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded font-mono">CHƯA LÀM (TO DO)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-company-todo">0</span>
                                     </div>
-                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-company-todo">
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1" id="list-company-todo">
                                         <!-- Dynamic render Task Cards -->
                                     </div>
                                 </div>
@@ -344,7 +344,7 @@
                                         <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded font-mono">ĐANG LÀM (DOING)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-company-doing">0</span>
                                     </div>
-                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-company-doing">
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1" id="list-company-doing">
                                         <!-- Dynamic render Task Cards -->
                                     </div>
                                 </div>
@@ -354,7 +354,7 @@
                                         <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">ĐÃ XONG (DONE)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-company-done">0</span>
                                     </div>
-                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-company-done">
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1" id="list-company-done">
                                         <!-- Dynamic render Task Cards -->
                                     </div>
                                 </div>
@@ -374,7 +374,7 @@
                                         <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded font-mono">CHƯA LÀM (TO DO)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-personal-todo">0</span>
                                     </div>
-                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-personal-todo">
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1" id="list-personal-todo">
                                         <!-- Dynamic render Task Cards -->
                                     </div>
                                 </div>
@@ -384,7 +384,7 @@
                                         <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded font-mono">ĐANG LÀM (DOING)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-personal-doing">0</span>
                                     </div>
-                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-personal-doing">
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1" id="list-personal-doing">
                                         <!-- Dynamic render Task Cards -->
                                     </div>
                                 </div>
@@ -394,7 +394,7 @@
                                         <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">ĐÃ XONG (DONE)</span>
                                         <span class="text-xs font-mono font-bold text-on-surface-variant dark:text-[#94a3b8]" id="count-personal-done">0</span>
                                     </div>
-                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1" id="list-personal-done">
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1" id="list-personal-done">
                                         <!-- Dynamic render Task Cards -->
                                     </div>
                                 </div>
@@ -803,30 +803,18 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Document Reference in Firestore (Global Shared State for simplicity)
+        // Document Reference in Firestore
         const stateDocRef = doc(db, "app_data", "lifeos_state");
 
         // Local state representation
         window.state = { tasks: [], events: [], diary: [], workflows: [] };
 
+        // CLEAN EMPTY DEFAULT STATE FOR RUNNING SYSTEM
         const DEFAULT_STATE = {
-            tasks: [
-                { id: '1', name: 'Đăng ký kiểm tra chất lượng chuyên ngành', category: 'Công việc', priority: 'Cao', duedate: '2026-07-09', status: 'todo', documentNo: 'IMP-2026-09A', workflowId: 'wf-import' },
-                { id: '2', name: 'Nhận báo giá cước vận chuyển (Air)', category: 'Công việc', priority: 'Trung bình', duedate: '2026-07-09', status: 'done', documentNo: 'EXP-2026-88B', workflowId: '' },
-                { id: '3', name: 'Đối soát công nợ đại lý tháng 6', category: 'Công việc', priority: 'Thấp', duedate: '2026-07-10', status: 'doing', documentNo: '', workflowId: '' },
-                { id: '4', name: 'Chạy bộ 5km ngoài trời', category: 'Cá nhân', priority: 'Trung bình', duedate: '2026-07-09', status: 'todo', documentNo: '', workflowId: '' }
-            ],
-            events: [
-                { id: '101', name: 'Họp thông quan lô hàng hóa IMP-2026-09A', date: '2026-07-09', time: '14:30', desc: 'Họp với bên đại lý khai thuê hải quan' },
-                { id: '102', name: 'Ký duyệt tờ khai vận đơn xuất khẩu', date: '2026-07-09', time: '17:30', desc: 'Ký đóng dấu đỏ' }
-            ],
-            diary: [
-                { id: '201', title: 'Hoàn thành hồ sơ thông quan lô IMP-09A', date: '2026-07-08', content: 'Hôm nay làm thủ tục khá thuận lợi, chỉ hải quan yêu cầu kiểm hóa thực tế nhưng không phát sinh lỗi phụ trội.', mood: '😃', tags: '#logistics #customs' }
-            ],
-            workflows: [
-                { id: 'wf-export', name: 'Quy trình Xuất khẩu hàng hóa', description: 'Các bước chuẩn bị chứng từ và khai thông quan xuất khẩu.', tasks: ['Tạo Packing List (PKL)', 'Tạo Commercial Invoice', 'Khai báo hải quan xuất khẩu', 'Gửi chứng từ cho Hãng tàu (Fwd)'] },
-                { id: 'wf-import', name: 'Quy trình Nhập khẩu đường biển', description: 'Các bước làm việc với FWD và hải quan đầu nhập.', tasks: ['Kiểm tra thông tin tờ khai nháp', 'Khai báo hải quan nhập khẩu', 'Gửi bộ chứng từ cho FWD'] }
-            ]
+            tasks: [],
+            events: [],
+            diary: [],
+            workflows: []
         };
 
         // Firebase Sync Status indicator updater
@@ -854,7 +842,6 @@
                 window.state = snap.data();
                 updateSyncIndicator('synced', 'Đã đồng bộ Firebase');
             } else {
-                // Initialize default state on Firestore if it doesn't exist
                 updateSyncIndicator('syncing', 'Đang khởi tạo database...');
                 setDoc(stateDocRef, DEFAULT_STATE).then(() => {
                     window.state = DEFAULT_STATE;
@@ -864,7 +851,6 @@
                     updateSyncIndicator('error', 'Lỗi khởi tạo database');
                 });
             }
-            // Trigger UI updates
             window.renderAll();
             window.handleRoute();
         }, (error) => {
@@ -1046,7 +1032,7 @@
             alert('Đã lưu ghi chú nhanh vào Nhật ký thành công!');
         }
 
-        // --- TASKS RENDER ---
+        // --- TASKS RENDER (COMPACT STYLE - 5 TASKS VIEWABLE) ---
         let currentDocFilter = 'all';
         let globalSearchQuery = '';
 
@@ -1116,38 +1102,38 @@
                 
                 let actionBtnsHtml = '';
                 if (status === 'todo') {
-                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'doing')" class="bg-gradient-to-r from-primary to-primary-container text-white text-[9px] font-bold px-2 py-1 rounded hover:brightness-110 transition-all shrink-0">Bắt đầu</button>`;
+                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'doing')" class="bg-gradient-to-r from-primary to-primary-container text-white text-[8px] font-bold px-1.5 py-0.5 rounded hover:brightness-110 transition-all shrink-0">Bắt đầu</button>`;
                 } else if (status === 'doing') {
-                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'done')" class="bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-emerald-700 transition-all shrink-0">Xong</button>`;
+                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'done')" class="bg-emerald-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded hover:bg-emerald-700 transition-all shrink-0">Xong</button>`;
                 } else {
-                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'todo')" class="text-on-surface-variant hover:text-primary text-[9px] font-bold shrink-0">Làm lại</button>`;
+                    actionBtnsHtml = `<button onclick="updateTaskStatus('${task.id}', 'todo')" class="text-on-surface-variant hover:text-primary text-[8px] font-semibold shrink-0">Làm lại</button>`;
                 }
 
                 const cardStyle = status === 'done' ? 'opacity-40 bg-black/5 dark:bg-[#0d0d21]/30' : 'bg-white dark:bg-[#0f0f2d]/80 border-outline-variant hover:border-primary/50';
 
+                // SUPER COMPACT CARD (Height around ~65px - 70px)
                 containerEl.innerHTML += `
-                    <div class="border border-outline-variant dark:border-white/5 p-3 rounded-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[120px] ${cardStyle}">
-                        <div class="flex-1 pb-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-[9px] font-mono text-on-surface-variant">${task.duedate}</span>
-                                <div class="flex items-center space-x-1.5">
+                    <div class="border border-outline-variant dark:border-white/5 p-2 rounded shadow-sm transition-all flex flex-col justify-between space-y-1.5 ${cardStyle}">
+                        <!-- Top Row: Date, Priority indicator and Doc indicator together -->
+                        <div class="flex items-center justify-between text-[8px] text-on-surface-variant font-mono">
+                            <span>${task.duedate}</span>
+                            <div class="flex items-center space-x-2">
+                                ${task.documentNo ? `<span class="bg-primary/10 text-primary border border-primary/20 px-1 rounded uppercase flex items-center space-x-0.5"><span class="material-symbols-outlined text-[8px]">local_shipping</span><span>${task.documentNo}</span></span>` : ''}
+                                <div class="flex items-center space-x-1">
                                     <span class="w-1.5 h-1.5 rounded-full ${prioColor}"></span>
-                                    <span class="text-[9px] font-bold text-on-surface-variant font-mono uppercase">${task.priority}</span>
+                                    <span class="font-bold uppercase">${task.priority}</span>
                                 </div>
                             </div>
-                            <h4 class="text-xs font-semibold text-on-surface dark:text-[#f8fafc] mt-2 leading-relaxed ${status === 'done' ? 'line-through opacity-50' : ''}">${task.name}</h4>
-                            ${task.documentNo ? `
-                            <div class="mt-2">
-                                <span class="inline-flex items-center space-x-1 text-[9px] font-mono font-bold bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-md uppercase">
-                                    <span class="material-symbols-outlined text-[10px]">local_shipping</span>
-                                    <span>${task.documentNo}</span>
-                                </span>
-                            </div>` : ''}
                         </div>
-                        <div class="flex items-center justify-between border-t border-outline-variant dark:border-white/5 pt-2 mt-auto shrink-0">
-                            <div class="space-x-1">
-                                <button onclick="openEditTaskModal('${task.id}')" class="text-primary hover:underline text-[9px] font-bold">SỬA</button>
-                                <button onclick="deleteTask('${task.id}')" class="text-error hover:underline text-[9px] font-bold">XÓA</button>
+                        
+                        <!-- Middle Row: Task Title -->
+                        <h4 class="text-[11px] font-semibold text-on-surface dark:text-[#f8fafc] leading-tight truncate ${status === 'done' ? 'line-through opacity-50' : ''}" title="${task.name}">${task.name}</h4>
+                        
+                        <!-- Bottom Row: Inline action controls -->
+                        <div class="flex items-center justify-between border-t border-outline-variant/30 dark:border-white/5 pt-1.5 shrink-0">
+                            <div class="space-x-2 text-[8px] font-bold">
+                                <button onclick="openEditTaskModal('${task.id}')" class="text-primary hover:underline">SỬA</button>
+                                <button onclick="deleteTask('${task.id}')" class="text-error hover:underline">XÓA</button>
                             </div>
                             <div>
                                 ${actionBtnsHtml}
@@ -1201,13 +1187,13 @@
 
             if (mode === 'single') {
                 btnSingle.className = "flex-1 text-center py-1 text-xs font-bold rounded bg-white dark:bg-[#1a1a44] text-primary shadow-sm";
-                btnWf.className = "flex-1 text-center py-1 text-xs font-bold rounded text-on-surface-variant hover:text-on-surface";
+                btnWf.className = "flex-1 text-center py-1 text-xs font-bold rounded text-on-surface-variant dark:text-[#94a3b8] hover:text-on-surface";
                 grpName.classList.remove('hidden');
                 grpWf.classList.add('hidden');
                 document.getElementById('task-name').setAttribute('required', 'true');
             } else {
                 btnWf.className = "flex-1 text-center py-1 text-xs font-bold rounded bg-white dark:bg-[#1a1a44] text-primary shadow-sm";
-                btnSingle.className = "flex-1 text-center py-1 text-xs font-bold rounded text-on-surface-variant hover:text-on-surface";
+                btnSingle.className = "flex-1 text-center py-1 text-xs font-bold rounded text-on-surface-variant dark:text-[#94a3b8] hover:text-on-surface";
                 grpWf.classList.remove('hidden');
                 grpName.classList.add('hidden');
                 document.getElementById('task-name').removeAttribute('required');
@@ -1254,6 +1240,7 @@
             document.getElementById('task-modal').classList.add('hidden');
         }
 
+        // Apply workflow correctly under empty defaults
         function handleTaskSubmit(e) {
             e.preventDefault();
             const editId = document.getElementById('task-edit-id').value;
@@ -1425,6 +1412,7 @@
             document.getElementById('event-modal').classList.add('hidden');
         }
 
+        // Calendar Form Submit
         function handleEventSubmit(e) {
             e.preventDefault();
             window.state.events.push({
