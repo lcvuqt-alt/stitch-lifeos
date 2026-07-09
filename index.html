@@ -193,7 +193,7 @@
 
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col h-full overflow-hidden">
-            <!-- Top Header -->
+            <!-- Header Bar -->
             <header class="h-16 border-b border-outline-variant dark:border-[#2d2d59] bg-white dark:bg-[#03030c] flex items-center justify-between px-8 shrink-0 transition-colors duration-300">
                 <div class="flex items-center space-x-4 flex-1">
                     <div class="relative w-80">
@@ -202,7 +202,7 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-6">
-                    <!-- Light/Dark Mode Switcher -->
+                    <!-- Light/Dark Mode Toggle -->
                     <button onclick="toggleTheme()" class="p-2 border border-outline-variant dark:border-[#2d2d59] rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-on-surface dark:text-on-surface-variant active:scale-90 transition-all flex items-center justify-center" id="theme-toggle-btn">
                         <span class="material-symbols-outlined text-lg" id="theme-toggle-icon">wb_sunny</span>
                     </button>
@@ -281,7 +281,7 @@
                                 <h3 class="text-sm font-bold text-on-surface dark:text-[#f8fafc] mb-2">Tiến độ hôm nay</h3>
                                 <div class="w-full bg-[#121232]/10 dark:bg-[#121232] h-2.5 rounded-full overflow-hidden mt-2">
                                     <div class="bg-gradient-to-r from-primary to-primary-container h-full transition-all duration-500" id="dashboard-progress-bar" style="width: 0%"></div>
-                               </div>
+                                </div>
                                 <div class="flex justify-between items-center mt-2 text-[10px] font-mono text-on-surface-variant dark:text-[#94a3b8]">
                                     <span id="dashboard-progress-text">0% hoàn thành</span>
                                     <span id="dashboard-progress-count">0/0 Tasks</span>
@@ -451,7 +451,7 @@
 
                         <!-- Right Panel -->
                         <div class="col-span-4 glass-panel rounded-xl p-6 flex flex-col h-full overflow-hidden">
-                            <h3 class="text-base font-bold text-on-surface dark:text-[#f8fafc] shrink-0">Chi tiết sự kiện</h3>
+                            <h3 class="text-base font-bold text-on-surface dark:text-[#f8fafc] shrink-0">Chi tiết ngày</h3>
                             <p class="text-xs text-on-surface-variant dark:text-[#94a3b8] mt-1 mb-4 shrink-0" id="selected-date-label">Chọn một ngày để xem lịch trình.</p>
                             <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1" id="selected-day-events-list">
                                 <!-- Dynamic Render -->
@@ -1017,7 +1017,7 @@
             alert('Đã lưu ghi chú nhanh vào Nhật ký thành công!');
         }
 
-        // Calendar operations
+        // Calendar operations inside Module
         window.handleEventSubmit = function(e) {
             e.preventDefault();
             window.state.events.push({
@@ -1037,6 +1037,76 @@
                 window.state.events = window.state.events.filter(e => e.id !== id);
                 window.saveState();
                 if (selectedDateStr) selectCalendarDay(selectedDateStr);
+            }
+        }
+
+        window.changeMonth = function(direction) {
+            currentCalMonth += direction;
+            if (currentCalMonth < 0) {
+                currentCalMonth = 11;
+                currentCalYear -= 1;
+            } else if (currentCalMonth > 11) {
+                currentCalMonth = 0;
+                currentCalYear += 1;
+            }
+            renderCalendar();
+        }
+
+        window.selectCalendarDay = function(dateStr) {
+            selectedDateStr = dateStr;
+            const parsed = new Date(dateStr);
+            document.getElementById('selected-date-label').innerText = parsed.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            const list = document.getElementById('selected-day-events-list');
+            list.innerHTML = '';
+
+            const dayEvents = window.state.events.filter(e => e.date === dateStr);
+            const dayTasks = window.state.tasks.filter(t => t.duedate === dateStr && t.status !== 'pending');
+
+            const hasData = dayEvents.length > 0 || dayTasks.length > 0;
+
+            if (!hasData) {
+                list.innerHTML = `<p class="text-xs text-on-surface-variant font-mono py-4 text-center">Không có sự kiện hoặc đầu việc.</p>`;
+            } else {
+                // In Events
+                dayEvents.forEach(e => {
+                    list.innerHTML += `
+                        <div class="bg-black/5 dark:bg-white/5 border border-outline-variant dark:border-white/5 rounded-lg p-2.5 relative flex items-start space-x-2">
+                            <span class="material-symbols-outlined text-primary text-sm mt-0.5">schedule</span>
+                            <div class="flex-1 min-w-0">
+                                <span class="bg-primary/20 text-primary text-[8px] font-mono font-bold px-1 rounded uppercase tracking-wider">SỰ KIỆN LỊCH</span>
+                                <h4 class="text-xs font-bold text-on-surface dark:text-[#f8fafc] mt-1 truncate">${e.name}</h4>
+                                <p class="text-[10px] font-mono text-on-surface-variant dark:text-[#94a3b8] mt-0.5">${e.time} &bull; ${e.desc}</p>
+                            </div>
+                            <button onclick="deleteEvent('${e.id}')" class="text-error hover:text-red-400">
+                                <span class="material-symbols-outlined text-xs">delete</span>
+                            </button>
+                        </div>
+                    `;
+                });
+
+                // In Tasks (hiện đầu việc hạn chót hôm đó)
+                dayTasks.forEach(t => {
+                    const statusIcon = t.status === 'done' ? 'task_alt' : t.status === 'doing' ? 'hourglass_empty' : 'circle';
+                    const categoryIcon = t.category === 'Cá nhân' ? 'family_restroom' : 'corporate_fare';
+                    
+                    list.innerHTML += `
+                        <div class="bg-black/5 dark:bg-white/5 border border-outline-variant dark:border-white/5 rounded-lg p-2.5 flex items-start space-x-2 opacity-95">
+                            <span class="material-symbols-outlined text-tertiary text-sm mt-0.5">${statusIcon}</span>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="bg-tertiary/20 text-tertiary text-[8px] font-mono font-bold px-1 rounded uppercase tracking-wider flex items-center space-x-0.5">
+                                        <span class="material-symbols-outlined text-[8px]">${categoryIcon}</span>
+                                        <span>${t.category}</span>
+                                    </span>
+                                    ${t.documentNo ? `<span class="bg-primary/10 text-primary border border-primary/20 text-[8px] px-1 rounded uppercase font-mono">${t.documentNo}</span>` : ''}
+                                </div>
+                                <h4 class="text-xs font-bold text-on-surface dark:text-[#f8fafc] mt-1 truncate ${t.status === 'done' ? 'line-through opacity-50' : ''}">${t.name}</h4>
+                                <p class="text-[10px] font-mono text-on-surface-variant dark:text-[#94a3b8] mt-0.5">Trạng thái: ${t.status.toUpperCase()} &bull; Hạn: ${t.duedate}</p>
+                            </div>
+                        </div>
+                    `;
+                });
             }
         }
 
@@ -1159,7 +1229,7 @@
             document.getElementById('workflow-modal').classList.remove('hidden');
         }
 
-        // Drag Drop implementation inside module scope to keep it connected to Firestore
+        // Drag Drop implementation inside module scope
         window.handleDragStart = function(ev, taskId) {
             ev.dataTransfer.setData("text/plain", taskId);
             ev.currentTarget.classList.add('dragging-task');
@@ -1535,7 +1605,7 @@
             document.getElementById('workflow-modal').classList.add('hidden');
         }
 
-        // TASK MODAL FORM SWAP
+        // TASK FORM FORM MODES
         let currentTaskFormMode = 'single';
 
         function switchTaskFormMode(mode) {
@@ -1604,23 +1674,7 @@
             openAddTaskModal();
         }
 
-        // --- 5. CALENDAR LOGIC ---
-        let currentCalYear = 2026;
-        let currentCalMonth = 6;
-        let selectedDateStr = null;
-
-        function changeMonth(direction) {
-            currentCalMonth += direction;
-            if (currentCalMonth < 0) {
-                currentCalMonth = 11;
-                currentCalYear -= 1;
-            } else if (currentCalMonth > 11) {
-                currentCalMonth = 0;
-                currentCalYear += 1;
-            }
-            renderCalendar();
-        }
-
+        // --- CALENDAR GRID INCLUDES (WITHOUT MODULE API DEPENDENCY DIRECTLY) ---
         function renderCalendar() {
             const header = document.getElementById('calendar-month-year');
             const monthsVi = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
@@ -1669,36 +1723,19 @@
             }
         }
 
-        function selectCalendarDay(dateStr) {
-            selectedDateStr = dateStr;
-            const parsed = new Date(dateStr);
-            document.getElementById('selected-date-label').innerText = parsed.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            
-            const list = document.getElementById('selected-day-events-list');
-            list.innerHTML = '';
-
-            const dayEvents = window.state.events.filter(e => e.date === dateStr);
-            if (dayEvents.length === 0) {
-                list.innerHTML = `<p class="text-xs text-on-surface-variant font-mono py-4 text-center">Không có sự kiện.</p>`;
-            } else {
-                dayEvents.forEach(e => {
-                    list.innerHTML += `
-                        <div class="bg-black/5 dark:bg-white/5 border border-outline-variant dark:border-white/5 rounded-lg p-3 relative flex items-start space-x-2">
-                            <span class="material-symbols-outlined text-primary text-sm mt-0.5">schedule</span>
-                            <div class="flex-1">
-                                <h4 class="text-xs font-bold text-on-surface dark:text-[#f8fafc]">${e.name}</h4>
-                                <p class="text-[10px] font-mono text-on-surface-variant dark:text-[#94a3b8] mt-0.5">${e.time} &bull; ${e.desc}</p>
-                            </div>
-                            <button onclick="deleteEvent('${e.id}')" class="text-error hover:text-red-400">
-                                <span class="material-symbols-outlined text-xs">delete</span>
-                            </button>
-                        </div>
-                    `;
-                });
-            }
+        function openAddEventModal() {
+            document.getElementById('event-date').value = selectedDateStr || new Date().toISOString().split('T')[0];
+            document.getElementById('event-name').value = '';
+            document.getElementById('event-time').value = '09:00';
+            document.getElementById('event-desc').value = '';
+            document.getElementById('event-modal').classList.remove('hidden');
         }
 
-        // --- 6. DIARY LOGIC ---
+        function closeEventModal() {
+            document.getElementById('event-modal').classList.add('hidden');
+        }
+
+        // --- 6. DIARY ARCHIVE INCLUDES ---
         let selectedDiaryId = null;
 
         function renderDiary() {
@@ -1734,112 +1771,41 @@
             renderDiary();
         }
 
-        // --- 8. WORKFLOWS TEMPLATES MANAGEMENT ---
-        function renderWorkflows() {
-            const container = document.getElementById('workflows-grid-container');
+        // --- 7. ANALYTICS PROGRESS BREAKDOWN ---
+        function renderAnalytics() {
+            const categories = {};
+            window.state.tasks.forEach(t => {
+                if (t.status !== 'pending') {
+                    categories[t.category] = (categories[t.category] || 0) + 1;
+                }
+            });
+
+            const container = document.getElementById('analytics-categories-progress');
             container.innerHTML = '';
 
-            window.state.workflows.forEach(wf => {
-                const activeTasksRelated = window.state.tasks.filter(t => t.dependsOn.length > 0 || window.state.tasks.some(other => other.dependsOn.includes(t.id)));
-                const uniqueBills = [...new Set(window.state.tasks.filter(t => t.documentNo && t.id.includes('-step-')).map(t => t.documentNo))].length;
-                
+            const keys = Object.keys(categories);
+            if (keys.length === 0) {
+                container.innerHTML = `<p class="text-xs text-on-surface-variant dark:text-[#94a3b8] font-mono text-center">Chưa có phân loại.</p>`;
+                return;
+            }
+
+            const activeTasksCount = window.state.tasks.filter(t => t.status !== 'pending').length;
+
+            keys.forEach(cat => {
+                const count = categories[cat];
+                const percentage = activeTasksCount > 0 ? Math.round((count / activeTasksCount) * 100) : 0;
                 container.innerHTML += `
-                    <div class="glass-panel p-6 rounded-xl flex flex-col justify-between min-h-64 shadow-sm relative overflow-hidden">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <div class="flex items-center space-x-2">
-                                    <span class="material-symbols-outlined text-primary">account_tree</span>
-                                    <h4 class="font-bold text-on-surface dark:text-[#f8fafc] text-sm">${wf.name}</h4>
-                                </div>
-                                <div class="flex items-center space-x-2">
-                                    <button onclick="openEditWorkflowModal('${wf.id}')" class="text-primary hover:text-purple-400">
-                                        <span class="material-symbols-outlined text-sm">edit</span>
-                                    </button>
-                                    <button onclick="deleteWorkflow('${wf.id}')" class="text-error hover:text-red-400">
-                                        <span class="material-symbols-outlined text-sm">delete</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <p class="text-xs text-on-surface-variant dark:text-[#94a3b8] mt-2 leading-relaxed">${wf.description}</p>
-                            
-                            <div class="mt-4 border-t border-outline-variant dark:border-white/5 pt-3 space-y-1">
-                                <h5 class="text-[9px] font-bold text-on-surface-variant dark:text-[#94a3b8] uppercase font-mono">DANH SÁCH BƯỚC VẬN HÀNH (${wf.tasks.length}):</h5>
-                                <div class="max-h-36 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
-                                    ${wf.tasks.map(t => {
-                                        const depTask = wf.tasks.find(d => d.uid === t.dependsOn[0]);
-                                        const depLabel = depTask ? `<span class="text-[9px] text-primary bg-primary/10 border border-primary/20 px-1 py-0.2 rounded font-mono ml-2">Sau bước: ${depTask.name}</span>` : '';
-                                        return `<div class="text-xs text-on-surface dark:text-[#f8fafc] flex flex-col p-1 bg-black/5 dark:bg-white/5 rounded border border-outline-variant/30 dark:border-white/2"><p class="font-semibold flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-primary inline-block mr-1.5 shrink-0"></span>${t.name}</p>${depLabel ? `<p class="mt-1">${depLabel}</p>` : ''}</div>`;
-                                    }).join('')}
-                                </div>
-                            </div>
+                    <div>
+                        <div class="flex justify-between items-center text-xs font-mono text-on-surface-variant dark:text-[#94a3b8] mb-1">
+                            <span>${cat}</span>
+                            <span>${count} Tasks (${percentage}%)</span>
                         </div>
-                        <div class="mt-4 border-t border-outline-variant dark:border-white/5 pt-3 flex items-center justify-between">
-                            <span class="text-[9px] font-mono text-on-surface-variant dark:text-[#94a3b8] font-bold">LÔ HÀNG ĐÃ ÁP DỤNG: ${uniqueBills} B/L</span>
-                            <button onclick="applyWorkflowToNewOrder('${wf.id}')" class="bg-gradient-to-r from-primary to-primary-container text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all hover:brightness-110">ÁP DỤNG</button>
+                        <div class="w-full bg-surface-container dark:bg-[#121232] h-2 rounded-full overflow-hidden">
+                            <div class="bg-primary h-full" style="width: ${percentage}%"></div>
                         </div>
                     </div>
                 `;
             });
-        }
-
-        function applyWorkflowToNewOrder(wfId) {
-            openAddTaskModal();
-            switchTaskFormMode('workflow');
-            document.getElementById('task-workflow-id').value = wfId;
-        }
-
-        // --- 9. AI CHAT SYSTEM ---
-        function sendChatMessage() {
-            const input = document.getElementById('ai-chat-input');
-            const text = input.value.trim();
-            if(!text) return;
-
-            appendMessage('user', text);
-            input.value = '';
-
-            setTimeout(() => {
-                let response = "Tôi đã tiếp nhận ý kiến của bạn. Tôi có thể tổng hợp báo cáo hoặc lọc các đầu việc theo số chứng từ của bạn.";
-                if(text.includes('Tóm tắt')) {
-                    const total = window.state.tasks.length;
-                    const active = window.state.tasks.filter(t => t.status !== 'done' && t.status !== 'pending').length;
-                    const orders = [...new Set(window.state.tasks.filter(t => t.documentNo).map(t => t.documentNo))].filter(b => b);
-                    response = `Tôi đã phân tích: Hệ thống đang quản lý ${total} công việc trên ${orders.length} lô vận đơn chứng từ khác nhau (${orders.join(', ')}). Hiện tại còn ${active} đầu việc đang cần xử lý. Khuyên bạn nên hoàn thành nốt quy trình của lô đang dở dang.`;
-                } else if (text.includes('tiến độ')) {
-                    response = "Báo cáo tiến độ: Quy trình Nhập khẩu đang hoàn thành đúng hạn 80%, các đầu việc Quy trình Xuất khẩu có xu hướng trễ 1 ngày do chậm khâu gom Commercial Invoice.";
-                } else if (text.includes('quy trình')) {
-                    response = "Gợi ý: Luôn áp dụng kịch bản mẫu khi khởi tạo việc theo lô hàng để đảm bảo tất cả các task con được gán cùng một số vận đơn.";
-                }
-                appendMessage('ai', response);
-            }, 1000);
-        }
-
-        function appendMessage(sender, text) {
-            const container = document.getElementById('ai-chat-messages');
-            const bubble = document.createElement('div');
-            bubble.className = `flex space-x-3 items-start ${sender === 'user' ? 'justify-end' : ''}`;
-            
-            if (sender === 'user') {
-                bubble.innerHTML = `
-                    <div class="bg-gradient-to-r from-primary to-primary-container text-white p-4 rounded-xl max-w-xl text-sm leading-relaxed">
-                        ${text}
-                    </div>
-                    <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-sm shrink-0">👤</div>
-                `;
-            } else {
-                bubble.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-sm shrink-0">🤖</div>
-                    <div class="bg-surface-container dark:bg-[#121232] border border-outline-variant dark:border-white/5 p-4 rounded-xl max-w-xl text-sm leading-relaxed text-on-surface dark:text-[#f8fafc]">
-                        ${text}
-                    </div>
-                `;
-            }
-            container.appendChild(bubble);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function sendQuickPrompt(prompt) {
-            document.getElementById('ai-chat-input').value = prompt;
-            sendChatMessage();
         }
 
         // --- 10. DECORATION: RIPPLE ---
