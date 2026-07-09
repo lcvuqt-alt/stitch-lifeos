@@ -763,12 +763,13 @@
     <div id="workflow-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50">
         <div class="glass-panel rounded-xl w-[450px] p-6 space-y-4">
             <div class="flex justify-between items-center pb-2 border-b border-outline-variant dark:border-[#2d2d59]">
-                <h3 class="font-bold text-on-surface dark:text-[#f8fafc] text-base">Tạo kịch bản quy trình mới</h3>
+                <h3 class="font-bold text-on-surface dark:text-[#f8fafc] text-base" id="workflow-modal-title">Tạo kịch bản quy trình mới</h3>
                 <button onclick="closeWorkflowModal()" class="text-on-surface-variant hover:text-on-surface dark:text-[#94a3b8]">
                     <span class="material-symbols-outlined text-xl">close</span>
                 </button>
             </div>
             <form id="workflow-form" class="space-y-4" onsubmit="handleWorkflowSubmit(event)">
+                <input type="hidden" id="workflow-edit-id">
                 <div>
                     <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">TÊN KỊCH BẢN QUY TRÌNH</label>
                     <input type="text" id="workflow-name" required placeholder="ví dụ: Quy trình Xuất khẩu hàng" class="w-full glass-input rounded px-3 py-1.5 text-sm focus:outline-none">
@@ -878,7 +879,7 @@
             }
         }
 
-        // Move task action handlers into module to keep Firebase API access intact
+        // Action Handlers bound to Global Window Scope
         window.updateTaskStatus = function(id, newStatus) {
             const task = window.state.tasks.find(t => t.id === id);
             if (task) {
@@ -1028,6 +1029,7 @@
         // Workflow templates operations
         window.handleWorkflowSubmit = function(e) {
             e.preventDefault();
+            const editId = document.getElementById('workflow-edit-id').value;
             const name = document.getElementById('workflow-name').value;
             const desc = document.getElementById('workflow-desc').value;
             const tasksRaw = document.getElementById('workflow-tasks-list').value;
@@ -1038,12 +1040,21 @@
                 return;
             }
 
-            window.state.workflows.push({
-                id: 'wf-' + Date.now(),
-                name: name,
-                description: desc,
-                tasks: tasks
-            });
+            if (editId) {
+                const wf = window.state.workflows.find(w => w.id === editId);
+                if (wf) {
+                    wf.name = name;
+                    wf.description = desc;
+                    wf.tasks = tasks;
+                }
+            } else {
+                window.state.workflows.push({
+                    id: 'wf-' + Date.now(),
+                    name: name,
+                    description: desc,
+                    tasks: tasks
+                });
+            }
 
             window.saveState();
             closeWorkflowModal();
@@ -1056,6 +1067,19 @@
                 window.saveState();
                 renderWorkflows();
             }
+        }
+
+        window.openEditWorkflowModal = function(id) {
+            const wf = window.state.workflows.find(w => w.id === id);
+            if (!wf) return;
+
+            document.getElementById('workflow-modal-title').innerText = "Chỉnh sửa kịch bản quy trình";
+            document.getElementById('workflow-edit-id').value = wf.id;
+            document.getElementById('workflow-name').value = wf.name;
+            document.getElementById('workflow-desc').value = wf.description;
+            document.getElementById('workflow-tasks-list').value = wf.tasks.join('\n');
+
+            document.getElementById('workflow-modal').classList.remove('hidden');
         }
 
         // Drag Drop implementation inside module
@@ -1575,9 +1599,14 @@
                                     <span class="material-symbols-outlined text-primary">account_tree</span>
                                     <h4 class="font-bold text-on-surface dark:text-[#f8fafc] text-sm">${wf.name}</h4>
                                 </div>
-                                <button onclick="deleteWorkflow('${wf.id}')" class="text-error hover:text-red-400">
-                                    <span class="material-symbols-outlined text-sm">delete</span>
-                                </button>
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="openEditWorkflowModal('${wf.id}')" class="text-primary hover:text-purple-400">
+                                        <span class="material-symbols-outlined text-sm">edit</span>
+                                    </button>
+                                    <button onclick="deleteWorkflow('${wf.id}')" class="text-error hover:text-red-400">
+                                        <span class="material-symbols-outlined text-sm">delete</span>
+                                    </button>
+                                </div>
                             </div>
                             <p class="text-xs text-on-surface-variant dark:text-[#94a3b8] mt-2 leading-relaxed">${wf.description}</p>
                             
@@ -1598,6 +1627,8 @@
         }
 
         function openAddWorkflowModal() {
+            document.getElementById('workflow-modal-title').innerText = "Tạo kịch bản quy trình mới";
+            document.getElementById('workflow-edit-id').value = '';
             document.getElementById('workflow-name').value = '';
             document.getElementById('workflow-desc').value = '';
             document.getElementById('workflow-tasks-list').value = '';
