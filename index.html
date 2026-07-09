@@ -281,7 +281,7 @@
                                 <h3 class="text-sm font-bold text-on-surface dark:text-[#f8fafc] mb-2">Tiến độ hôm nay</h3>
                                 <div class="w-full bg-[#121232]/10 dark:bg-[#121232] h-2.5 rounded-full overflow-hidden mt-2">
                                     <div class="bg-gradient-to-r from-primary to-primary-container h-full transition-all duration-500" id="dashboard-progress-bar" style="width: 0%"></div>
-                                </div>
+                               </div>
                                 <div class="flex justify-between items-center mt-2 text-[10px] font-mono text-on-surface-variant dark:text-[#94a3b8]">
                                     <span id="dashboard-progress-text">0% hoàn thành</span>
                                     <span id="dashboard-progress-count">0/0 Tasks</span>
@@ -900,7 +900,6 @@
             let changed = false;
             relatedTasks.forEach(task => {
                 if (task.status === 'pending') {
-                    // Check if all dependencies are satisfied
                     const allDone = task.dependsOn.every(depUid => doneTaskUids.includes(depUid));
                     if (allDone) {
                         task.status = 'todo';
@@ -972,7 +971,6 @@
                     if (workflow) {
                         const uniqueBillId = docNo || `WF-${workflow.id.substring(3, 7).toUpperCase()}-${Date.now().toString().substring(8)}`;
                         
-                        // Map internal workflow task UID to a newly generated active task ID
                         const uidMap = {};
                         workflow.tasks.forEach(wTask => {
                             uidMap[wTask.uid] = `${Date.now()}-${wTask.uid}`;
@@ -981,8 +979,6 @@
                         workflow.tasks.forEach(wTask => {
                             const newActiveId = uidMap[wTask.uid];
                             const activeDepends = wTask.dependsOn.map(depUid => uidMap[depUid]);
-                            
-                            // Initialize tasks with unsatisfied dependencies as 'pending'
                             const initialStatus = activeDepends.length > 0 ? 'pending' : 'todo';
 
                             window.state.tasks.push({
@@ -1089,7 +1085,6 @@
             const name = document.getElementById('workflow-name').value;
             const desc = document.getElementById('workflow-desc').value;
 
-            // Assemble steps and dependsOn from DOM
             const stepRows = document.querySelectorAll('.workflow-step-row');
             const tasks = [];
             stepRows.forEach(row => {
@@ -1154,7 +1149,6 @@
             document.getElementById('workflow-name').value = wf.name;
             document.getElementById('workflow-desc').value = wf.description;
 
-            // Render existing steps with dependencies
             const container = document.getElementById('workflow-steps-container');
             container.innerHTML = '';
             
@@ -1165,7 +1159,20 @@
             document.getElementById('workflow-modal').classList.remove('hidden');
         }
 
-        // Drag Drop implementation inside module
+        // Drag Drop implementation inside module scope to keep it connected to Firestore
+        window.handleDragStart = function(ev, taskId) {
+            ev.dataTransfer.setData("text/plain", taskId);
+            ev.currentTarget.classList.add('dragging-task');
+        }
+
+        window.handleDragEnd = function(ev) {
+            ev.currentTarget.classList.remove('dragging-task');
+        }
+
+        window.allowDrop = function(ev) {
+            ev.preventDefault();
+        }
+
         window.handleDrop = function(ev, targetStatus, categoryZone) {
             ev.preventDefault();
             const taskId = ev.dataTransfer.getData("text/plain");
@@ -1284,7 +1291,6 @@
         // --- DASHBOARD RENDER ---
         function renderDashboard() {
             const todayStr = new Date().toISOString().split('T')[0];
-            // Filter pending tasks from active dashboard count
             const activeTasks = window.state.tasks.filter(t => t.status !== 'done' && t.status !== 'pending');
             
             document.getElementById('stat-tasks-today').innerText = activeTasks.length;
@@ -1369,7 +1375,6 @@
                 });
             });
 
-            // Filter out pending tasks (hiding inactive steps in the sequence)
             let filtered = window.state.tasks.filter(t => t.status !== 'pending');
             
             if (globalSearchQuery) {
@@ -1471,7 +1476,7 @@
                 
                 select.innerHTML = '<option value="">(Không phụ thuộc - Chạy ngay)</option>';
                 steps.forEach(step => {
-                    if (step.uid !== currentUid) { // cannot depend on itself
+                    if (step.uid !== currentUid) {
                         select.innerHTML += `<option value="${step.uid}">Sau khi xong: ${step.name}</option>`;
                     }
                 });
@@ -1521,7 +1526,6 @@
             document.getElementById('workflow-desc').value = '';
             document.getElementById('workflow-steps-container').innerHTML = '';
             
-            // Add 1 default step row to start with
             addNewWorkflowStepRow();
             
             document.getElementById('workflow-modal').classList.remove('hidden');
