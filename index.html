@@ -836,6 +836,7 @@
             }
         }
 
+        // Realtime sync from Firebase
         onSnapshot(stateDocRef, (snap) => {
             if (snap.exists()) {
                 window.state = snap.data();
@@ -857,6 +858,7 @@
             updateSyncIndicator('error', 'Lỗi kết nối Firebase');
         });
 
+        // Save state back to Firestore
         window.saveState = function() {
             updateSyncIndicator('syncing', 'Đang lưu lên Firebase...');
             setDoc(stateDocRef, window.state)
@@ -875,9 +877,212 @@
                 window.saveState();
             }
         }
+
+        // Move task action handlers into module to keep Firebase API access intact
+        window.updateTaskStatus = function(id, newStatus) {
+            const task = window.state.tasks.find(t => t.id === id);
+            if (task) {
+                task.status = newStatus;
+                window.saveState();
+            }
+        }
+
+        window.deleteTask = function(id) {
+            if (confirm('Bạn có thực sự muốn xóa công việc này?')) {
+                window.state.tasks = window.state.tasks.filter(t => t.id !== id);
+                window.saveState();
+            }
+        }
+
+        window.handleTaskSubmit = function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('task-edit-id').value;
+            const taskName = document.getElementById('task-name').value;
+            const docNo = document.getElementById('task-document-no').value.trim().toUpperCase();
+            const taskCat = document.getElementById('task-category').value;
+            const taskPri = document.getElementById('task-priority').value;
+            const taskDue = document.getElementById('task-duedate').value;
+
+            if (editId) {
+                const task = window.state.tasks.find(t => t.id === editId);
+                if (task) {
+                    task.name = taskName;
+                    task.documentNo = docNo;
+                    task.category = taskCat;
+                    task.priority = taskPri;
+                    task.duedate = taskDue;
+                }
+            } else {
+                if (currentTaskFormMode === 'single') {
+                    window.state.tasks.push({
+                        id: Date.now().toString(),
+                        name: taskName,
+                        category: taskCat,
+                        priority: taskPri,
+                        duedate: taskDue,
+                        status: 'todo',
+                        documentNo: docNo,
+                        workflowId: ''
+                    });
+                } else {
+                    const wfId = document.getElementById('task-workflow-id').value;
+                    const workflow = window.state.workflows.find(w => w.id === wfId);
+                    if (workflow) {
+                        workflow.tasks.forEach((taskNameItem, index) => {
+                            window.state.tasks.push({
+                                id: `${Date.now()}-${index}`,
+                                name: taskNameItem,
+                                category: taskCat,
+                                priority: taskPri,
+                                duedate: taskDue,
+                                status: 'todo',
+                                documentNo: docNo || `WF-${workflow.id.substring(3).toUpperCase()}`,
+                                workflowId: wfId
+                            });
+                        });
+                    }
+                }
+            }
+            window.saveState();
+            closeTaskModal();
+        }
+
+        window.saveQuickNote = function() {
+            const noteText = document.getElementById('dashboard-quick-note').value.trim();
+            if (!noteText) return;
+            const newEntry = {
+                id: Date.now().toString(),
+                title: 'Ghi chép nhanh vận hành',
+                date: new Date().toISOString().split('T')[0],
+                content: noteText,
+                mood: '😐',
+                tags: '#quicknote'
+            };
+            window.state.diary.unshift(newEntry);
+            document.getElementById('dashboard-quick-note').value = '';
+            window.saveState();
+            alert('Đã lưu ghi chú nhanh vào Nhật ký thành công!');
+        }
+
+        // Calendar operations
+        window.handleEventSubmit = function(e) {
+            e.preventDefault();
+            window.state.events.push({
+                id: Date.now().toString(),
+                name: document.getElementById('event-name').value,
+                date: document.getElementById('event-date').value,
+                time: document.getElementById('event-time').value,
+                desc: document.getElementById('event-desc').value
+            });
+            window.saveState();
+            closeEventModal();
+            if (selectedDateStr) selectCalendarDay(selectedDateStr);
+        }
+
+        window.deleteEvent = function(id) {
+            if (confirm('Bạn có muốn xóa sự kiện này?')) {
+                window.state.events = window.state.events.filter(e => e.id !== id);
+                window.saveState();
+                if (selectedDateStr) selectCalendarDay(selectedDateStr);
+            }
+        }
+
+        // Diary operations
+        window.saveDiaryEntry = function() {
+            if (!selectedDiaryId) return;
+            const entry = window.state.diary.find(d => d.id === selectedDiaryId);
+            if (entry) {
+                entry.title = document.getElementById('diary-title-input').value;
+                entry.mood = document.getElementById('diary-mood-select').value;
+                entry.tags = document.getElementById('diary-tags-input').value;
+                entry.content = document.getElementById('diary-content-input').value;
+                window.saveState();
+                alert('Đã lưu trang viết thành công!');
+            }
+        }
+
+        window.deleteDiaryEntry = function() {
+            if (!selectedDiaryId) return;
+            if (confirm('Bạn có muốn xóa bài nhật ký này?')) {
+                window.state.diary = window.state.diary.filter(d => d.id !== selectedDiaryId);
+                selectedDiaryId = null;
+                document.getElementById('diary-no-select-placeholder').classList.remove('hidden');
+                window.saveState();
+            }
+        }
+
+        window.createNewDiaryEntry = function() {
+            const newEntry = {
+                id: Date.now().toString(),
+                title: 'Trang viết mới vận hành logistics',
+                date: new Date().toISOString().split('T')[0],
+                content: '',
+                mood: '😊',
+                tags: '#customs'
+            };
+            window.state.diary.unshift(newEntry);
+            window.saveState();
+            selectDiaryEntry(newEntry.id);
+        }
+
+        // Workflow templates operations
+        window.handleWorkflowSubmit = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('workflow-name').value;
+            const desc = document.getElementById('workflow-desc').value;
+            const tasksRaw = document.getElementById('workflow-tasks-list').value;
+            const tasks = tasksRaw.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+
+            if(tasks.length === 0) {
+                alert('Vui lòng nhập ít nhất một task con.');
+                return;
+            }
+
+            window.state.workflows.push({
+                id: 'wf-' + Date.now(),
+                name: name,
+                description: desc,
+                tasks: tasks
+            });
+
+            window.saveState();
+            closeWorkflowModal();
+            renderWorkflows();
+        }
+
+        window.deleteWorkflow = function(id) {
+            if(confirm("Bạn có muốn xóa kịch bản quy trình này?")) {
+                window.state.workflows = window.state.workflows.filter(w => w.id !== id);
+                window.saveState();
+                renderWorkflows();
+            }
+        }
+
+        // Drag Drop implementation inside module
+        window.handleDrop = function(ev, targetStatus, categoryZone) {
+            ev.preventDefault();
+            const taskId = ev.dataTransfer.getData("text/plain");
+            const task = window.state.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const statusValues = { 'todo': 1, 'doing': 2, 'done': 3 };
+            const currentVal = statusValues[task.status] || 1;
+            const targetVal = statusValues[targetStatus] || 1;
+
+            if (targetVal < currentVal) {
+                if (!confirm("Bạn có thực sự muốn chuyển ngược trạng thái công việc này?")) {
+                    renderTasks();
+                    return;
+                }
+            }
+
+            task.status = targetStatus;
+            task.category = categoryZone;
+            window.saveState();
+        }
     </script>
 
-    <!-- UI Logic Script -->
+    <!-- UI Interaction Script -->
     <script>
         // --- Theme Engine ---
         function initTheme() {
@@ -1010,24 +1215,7 @@
             }
         }
 
-        function saveQuickNote() {
-            const noteText = document.getElementById('dashboard-quick-note').value.trim();
-            if (!noteText) return;
-            const newEntry = {
-                id: Date.now().toString(),
-                title: 'Ghi chép nhanh vận hành',
-                date: new Date().toISOString().split('T')[0],
-                content: noteText,
-                mood: '😐',
-                tags: '#quicknote'
-            };
-            window.state.diary.unshift(newEntry);
-            document.getElementById('dashboard-quick-note').value = '';
-            window.saveState();
-            alert('Đã lưu ghi chú nhanh vào Nhật ký thành công!');
-        }
-
-        // --- TASKS RENDER (SUPER FLAT CARD & DRAG DROP) ---
+        // --- TASKS RENDER (SUPER FLAT COMPACT CARD & DRAG DROP) ---
         let currentDocFilter = 'all';
         let globalSearchQuery = '';
 
@@ -1051,7 +1239,7 @@
             select.value = currentDocFilter;
         }
 
-        // HTML5 Drag and Drop Handlers
+        // Drag events mappings
         function handleDragStart(ev, taskId) {
             ev.dataTransfer.setData("text/plain", taskId);
             ev.currentTarget.classList.add('dragging-task');
@@ -1064,36 +1252,6 @@
         function allowDrop(ev) {
             ev.preventDefault();
         }
-
-        function handleDrop(ev, targetStatus, categoryZone) {
-            ev.preventDefault();
-            const taskId = ev.dataTransfer.getData("text/plain");
-            const task = window.state.tasks.find(t => t.id === taskId);
-            if (!task) return;
-
-            // Map statuses for value comparison
-            const statusValues = { 'todo': 1, 'doing': 2, 'done': 3 };
-            const currentVal = statusValues[task.status] || 1;
-            const targetVal = statusValues[targetStatus] || 1;
-
-            // Confirm on drag back
-            if (targetVal < currentVal) {
-                if (!confirm("Bạn có thực sự muốn chuyển ngược trạng thái công việc này?")) {
-                    renderTasks(); // redrawn to clear any temporary UI styles
-                    return;
-                }
-            }
-
-            // Update status and category (ensures category is kept or adjusted if dragged inside enterprise/personal zones)
-            task.status = targetStatus;
-            task.category = categoryZone;
-            window.saveState();
-        }
-
-        window.handleDragStart = handleDragStart;
-        window.handleDragEnd = handleDragEnd;
-        window.allowDrop = allowDrop;
-        window.handleDrop = handleDrop;
 
         function renderTasks() {
             const panels = {
@@ -1141,7 +1299,7 @@
                 
                 const cardStyle = status === 'done' ? 'opacity-40 bg-black/5 dark:bg-[#0d0d21]/30' : 'bg-white dark:bg-[#0f0f2d]/80 border-outline-variant hover:border-primary/50';
 
-                // SUPER FLAT TASK CARD (Height around ~48px, Actions inline on right)
+                // SUPER FLAT TASK CARD
                 containerEl.innerHTML += `
                     <div draggable="true" 
                          ondragstart="handleDragStart(event, '${task.id}')" 
@@ -1187,21 +1345,6 @@
                     }
                 });
             });
-        }
-
-        function updateTaskStatus(id, newStatus) {
-            const task = window.state.tasks.find(t => t.id === id);
-            if (task) {
-                task.status = newStatus;
-                window.saveState();
-            }
-        }
-
-        function deleteTask(id) {
-            if (confirm('Bạn có thực sự muốn xóa công việc này?')) {
-                window.state.tasks = window.state.tasks.filter(t => t.id !== id);
-                window.saveState();
-            }
         }
 
         // TASK MODAL LOGIC
@@ -1267,59 +1410,6 @@
 
         function closeTaskModal() {
             document.getElementById('task-modal').classList.add('hidden');
-        }
-
-        function handleTaskSubmit(e) {
-            e.preventDefault();
-            const editId = document.getElementById('task-edit-id').value;
-            const taskName = document.getElementById('task-name').value;
-            const docNo = document.getElementById('task-document-no').value.trim().toUpperCase();
-            const taskCat = document.getElementById('task-category').value;
-            const taskPri = document.getElementById('task-priority').value;
-            const taskDue = document.getElementById('task-duedate').value;
-
-            if (editId) {
-                const task = window.state.tasks.find(t => t.id === editId);
-                if (task) {
-                    task.name = taskName;
-                    task.documentNo = docNo;
-                    task.category = taskCat;
-                    task.priority = taskPri;
-                    task.duedate = taskDue;
-                }
-            } else {
-                if (currentTaskFormMode === 'single') {
-                    window.state.tasks.push({
-                        id: Date.now().toString(),
-                        name: taskName,
-                        category: taskCat,
-                        priority: taskPri,
-                        duedate: taskDue,
-                        status: 'todo',
-                        documentNo: docNo,
-                        workflowId: ''
-                    });
-                } else {
-                    const wfId = document.getElementById('task-workflow-id').value;
-                    const workflow = window.state.workflows.find(w => w.id === wfId);
-                    if (workflow) {
-                        workflow.tasks.forEach((taskNameItem, index) => {
-                            window.state.tasks.push({
-                                id: `${Date.now()}-${index}`,
-                                name: taskNameItem,
-                                category: taskCat,
-                                priority: taskPri,
-                                duedate: taskDue,
-                                status: 'todo',
-                                documentNo: docNo || `WF-${workflow.id.substring(3).toUpperCase()}`,
-                                workflowId: wfId
-                            });
-                        });
-                    }
-                }
-            }
-            window.saveState();
-            closeTaskModal();
         }
 
         function toggleQuickTaskModal() {
@@ -1420,14 +1510,6 @@
             }
         }
 
-        function deleteEvent(id) {
-            if (confirm('Bạn có muốn xóa sự kiện này?')) {
-                window.state.events = window.state.events.filter(e => e.id !== id);
-                window.saveState();
-                if (selectedDateStr) selectCalendarDay(selectedDateStr);
-            }
-        }
-
         function openAddEventModal() {
             document.getElementById('event-date').value = selectedDateStr || new Date().toISOString().split('T')[0];
             document.getElementById('event-name').value = '';
@@ -1438,20 +1520,6 @@
 
         function closeEventModal() {
             document.getElementById('event-modal').classList.add('hidden');
-        }
-
-        function handleEventSubmit(e) {
-            e.preventDefault();
-            window.state.events.push({
-                id: Date.now().toString(),
-                name: document.getElementById('event-name').value,
-                date: document.getElementById('event-date').value,
-                time: document.getElementById('event-time').value,
-                desc: document.getElementById('event-desc').value
-            });
-            window.saveState();
-            closeEventModal();
-            if (selectedDateStr) selectCalendarDay(selectedDateStr);
         }
 
         // --- 6. DIARY LOGIC ---
@@ -1488,76 +1556,6 @@
             document.getElementById('diary-content-input').value = entry.content;
 
             renderDiary();
-        }
-
-        function createNewDiaryEntry() {
-            const newEntry = {
-                id: Date.now().toString(),
-                title: 'Trang viết mới vận hành logistics',
-                date: new Date().toISOString().split('T')[0],
-                content: '',
-                mood: '😊',
-                tags: '#customs'
-            };
-            window.state.diary.unshift(newEntry);
-            window.saveState();
-            selectDiaryEntry(newEntry.id);
-        }
-
-        function saveDiaryEntry() {
-            if (!selectedDiaryId) return;
-            const entry = window.state.diary.find(d => d.id === selectedDiaryId);
-            if (entry) {
-                entry.title = document.getElementById('diary-title-input').value;
-                entry.mood = document.getElementById('diary-mood-select').value;
-                entry.tags = document.getElementById('diary-tags-input').value;
-                entry.content = document.getElementById('diary-content-input').value;
-                window.saveState();
-                alert('Đã lưu trang viết thành công!');
-            }
-        }
-
-        function deleteDiaryEntry() {
-            if (!selectedDiaryId) return;
-            if (confirm('Bạn có muốn xóa bài nhật ký này?')) {
-                window.state.diary = window.state.diary.filter(d => d.id !== selectedDiaryId);
-                selectedDiaryId = null;
-                document.getElementById('diary-no-select-placeholder').classList.remove('hidden');
-                window.saveState();
-            }
-        }
-
-        // --- 7. ANALYTICS LOGIC ---
-        function renderAnalytics() {
-            const categories = {};
-            window.state.tasks.forEach(t => {
-                categories[t.category] = (categories[t.category] || 0) + 1;
-            });
-
-            const container = document.getElementById('analytics-categories-progress');
-            container.innerHTML = '';
-
-            const keys = Object.keys(categories);
-            if (keys.length === 0) {
-                container.innerHTML = `<p class="text-xs text-on-surface-variant dark:text-[#94a3b8] font-mono text-center">Chưa có phân loại.</p>`;
-                return;
-            }
-
-            keys.forEach(cat => {
-                const count = categories[cat];
-                const percentage = Math.round((count / window.state.tasks.length) * 100);
-                container.innerHTML += `
-                    <div>
-                        <div class="flex justify-between items-center text-xs font-mono text-on-surface-variant dark:text-[#94a3b8] mb-1">
-                            <span>${cat}</span>
-                            <span>${count} Tasks (${percentage}%)</span>
-                        </div>
-                        <div class="w-full bg-surface-container dark:bg-[#121232] h-2 rounded-full overflow-hidden">
-                            <div class="bg-primary h-full" style="width: ${percentage}%"></div>
-                        </div>
-                    </div>
-                `;
-            });
         }
 
         // --- 8. WORKFLOWS TEMPLATES MANAGEMENT ---
@@ -1599,20 +1597,6 @@
             });
         }
 
-        function deleteWorkflow(id) {
-            if(confirm("Bạn có muốn xóa kịch bản quy trình này?")) {
-                window.state.workflows = window.state.workflows.filter(w => w.id !== id);
-                window.saveState();
-                renderWorkflows();
-            }
-        }
-
-        function applyWorkflowToNewOrder(wfId) {
-            openAddTaskModal();
-            switchTaskFormMode('workflow');
-            document.getElementById('task-workflow-id').value = wfId;
-        }
-
         function openAddWorkflowModal() {
             document.getElementById('workflow-name').value = '';
             document.getElementById('workflow-desc').value = '';
@@ -1622,30 +1606,6 @@
 
         function closeWorkflowModal() {
             document.getElementById('workflow-modal').classList.add('hidden');
-        }
-
-        function handleWorkflowSubmit(e) {
-            e.preventDefault();
-            const name = document.getElementById('workflow-name').value;
-            const desc = document.getElementById('workflow-desc').value;
-            const tasksRaw = document.getElementById('workflow-tasks-list').value;
-            const tasks = tasksRaw.split('\n').map(t => t.trim()).filter(t => t.length > 0);
-
-            if(tasks.length === 0) {
-                alert('Vui lòng nhập ít nhất một task con.');
-                return;
-            }
-
-            window.state.workflows.push({
-                id: 'wf-' + Date.now(),
-                name: name,
-                description: desc,
-                tasks: tasks
-            });
-
-            window.saveState();
-            closeWorkflowModal();
-            renderWorkflows();
         }
 
         // --- 9. AI CHAT SYSTEM ---
