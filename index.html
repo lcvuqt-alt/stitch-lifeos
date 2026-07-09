@@ -761,14 +761,15 @@
 
     <!-- MODAL: ADD/EDIT WORKFLOW TEMPLATE -->
     <div id="workflow-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50">
-        <div class="glass-panel rounded-xl w-[450px] p-6 space-y-4">
-            <div class="flex justify-between items-center pb-2 border-b border-outline-variant dark:border-[#2d2d59]">
+        <div class="glass-panel rounded-xl w-[580px] p-6 space-y-4 max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center pb-2 border-b border-outline-variant dark:border-[#2d2d59] shrink-0">
                 <h3 class="font-bold text-on-surface dark:text-[#f8fafc] text-base" id="workflow-modal-title">Tạo kịch bản quy trình mới</h3>
                 <button onclick="closeWorkflowModal()" class="text-on-surface-variant hover:text-on-surface dark:text-[#94a3b8]">
                     <span class="material-symbols-outlined text-xl">close</span>
                 </button>
             </div>
-            <form id="workflow-form" class="space-y-4" onsubmit="handleWorkflowSubmit(event)">
+            
+            <form id="workflow-form" class="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-1 pb-2" onsubmit="handleWorkflowSubmit(event)">
                 <input type="hidden" id="workflow-edit-id">
                 <div>
                     <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">TÊN KỊCH BẢN QUY TRÌNH</label>
@@ -778,11 +779,22 @@
                     <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">MÔ TẢ NGẮN</label>
                     <input type="text" id="workflow-desc" placeholder="Các công việc chuẩn bị cho hồ sơ xuất khẩu..." class="w-full glass-input rounded px-3 py-1.5 text-sm focus:outline-none">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase mb-1">DANH SÁCH TASK CON (MỖI DÒNG LÀ 1 TASK)</label>
-                    <textarea id="workflow-tasks-list" rows="5" required placeholder="Tạo Packing List (PKL)&#10;Tạo Commercial Invoice&#10;Khai hải quan điện tử" class="w-full glass-input rounded p-3 text-sm resize-none focus:outline-none"></textarea>
+                
+                <!-- Dynamic Steps Designer Zone -->
+                <div class="space-y-2 border-t border-outline-variant dark:border-white/5 pt-3">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] font-mono uppercase">THIẾT KẾ CÁC BƯỚC CÔNG VIỆC (TUẦN TỰ HOẶC SONG SONG)</label>
+                        <button type="button" onclick="addNewWorkflowStepRow()" class="text-[10px] font-bold text-primary hover:underline flex items-center space-x-1">
+                            <span class="material-symbols-outlined text-xs">add</span>
+                            <span>THÊM BƯỚC</span>
+                        </button>
+                    </div>
+                    <div id="workflow-steps-container" class="space-y-2.5">
+                        <!-- Dynamic generated step rows -->
+                    </div>
                 </div>
-                <div class="flex justify-end space-x-2 pt-2">
+
+                <div class="flex justify-end space-x-2 pt-4 border-t border-outline-variant dark:border-white/5 shrink-0">
                     <button type="button" onclick="closeWorkflowModal()" class="px-4 py-2 border border-outline-variant dark:border-[#2d2d59] rounded text-xs font-bold text-on-surface-variant dark:text-[#94a3b8] hover:bg-black/5 dark:hover:bg-white/5 transition-all">HỦY BỎ</button>
                     <button type="submit" class="px-4 py-2 bg-gradient-to-r from-primary to-primary-container text-white rounded text-xs font-bold hover:brightness-110 transition-all">LƯU KỊCH BẢN</button>
                 </div>
@@ -879,11 +891,36 @@
             }
         }
 
-        // Action Handlers bound to Global Window Scope
+        // Check dependencies and unlock pending tasks
+        function checkAndUnlockTasks(documentNo) {
+            if (!documentNo) return;
+            const relatedTasks = window.state.tasks.filter(t => t.documentNo === documentNo);
+            const doneTaskUids = relatedTasks.filter(t => t.status === 'done').map(t => t.wfTaskUid);
+
+            let changed = false;
+            relatedTasks.forEach(task => {
+                if (task.status === 'pending') {
+                    // Check if all dependencies are satisfied
+                    const allDone = task.dependsOn.every(depUid => doneTaskUids.includes(depUid));
+                    if (allDone) {
+                        task.status = 'todo';
+                        changed = true;
+                    }
+                }
+            });
+
+            if (changed) {
+                updateSyncIndicator('syncing', 'Mở khóa bước tiếp theo...');
+            }
+        }
+
         window.updateTaskStatus = function(id, newStatus) {
             const task = window.state.tasks.find(t => t.id === id);
             if (task) {
                 task.status = newStatus;
+                if (newStatus === 'done') {
+                    checkAndUnlockTasks(task.documentNo);
+                }
                 window.saveState();
             }
         }
@@ -912,6 +949,9 @@
                     task.category = taskCat;
                     task.priority = taskPri;
                     task.duedate = taskDue;
+                    if (task.status === 'done') {
+                        checkAndUnlockTasks(docNo);
+                    }
                 }
             } else {
                 if (currentTaskFormMode === 'single') {
@@ -923,22 +963,38 @@
                         duedate: taskDue,
                         status: 'todo',
                         documentNo: docNo,
-                        workflowId: ''
+                        dependsOn: [],
+                        wfTaskUid: ''
                     });
                 } else {
                     const wfId = document.getElementById('task-workflow-id').value;
                     const workflow = window.state.workflows.find(w => w.id === wfId);
                     if (workflow) {
-                        workflow.tasks.forEach((taskNameItem, index) => {
+                        const uniqueBillId = docNo || `WF-${workflow.id.substring(3, 7).toUpperCase()}-${Date.now().toString().substring(8)}`;
+                        
+                        // Map internal workflow task UID to a newly generated active task ID
+                        const uidMap = {};
+                        workflow.tasks.forEach(wTask => {
+                            uidMap[wTask.uid] = `${Date.now()}-${wTask.uid}`;
+                        });
+
+                        workflow.tasks.forEach(wTask => {
+                            const newActiveId = uidMap[wTask.uid];
+                            const activeDepends = wTask.dependsOn.map(depUid => uidMap[depUid]);
+                            
+                            // Initialize tasks with unsatisfied dependencies as 'pending'
+                            const initialStatus = activeDepends.length > 0 ? 'pending' : 'todo';
+
                             window.state.tasks.push({
-                                id: `${Date.now()}-${index}`,
-                                name: taskNameItem,
+                                id: newActiveId,
+                                name: wTask.name,
                                 category: taskCat,
                                 priority: taskPri,
                                 duedate: taskDue,
-                                status: 'todo',
-                                documentNo: docNo || `WF-${workflow.id.substring(3).toUpperCase()}`,
-                                workflowId: wfId
+                                status: initialStatus,
+                                documentNo: uniqueBillId,
+                                dependsOn: activeDepends,
+                                wfTaskUid: newActiveId
                             });
                         });
                     }
@@ -1032,11 +1088,31 @@
             const editId = document.getElementById('workflow-edit-id').value;
             const name = document.getElementById('workflow-name').value;
             const desc = document.getElementById('workflow-desc').value;
-            const tasksRaw = document.getElementById('workflow-tasks-list').value;
-            const tasks = tasksRaw.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+
+            // Assemble steps and dependsOn from DOM
+            const stepRows = document.querySelectorAll('.workflow-step-row');
+            const tasks = [];
+            stepRows.forEach(row => {
+                const uid = row.getAttribute('data-step-uid');
+                const stepName = row.querySelector('.step-name-input').value.trim();
+                const depSelect = row.querySelector('.step-dependency-select');
+                
+                const dependsOn = [];
+                if (depSelect && depSelect.value) {
+                    dependsOn.push(depSelect.value);
+                }
+
+                if (stepName) {
+                    tasks.push({
+                        uid: uid,
+                        name: stepName,
+                        dependsOn: dependsOn
+                    });
+                }
+            });
 
             if(tasks.length === 0) {
-                alert('Vui lòng nhập ít nhất một task con.');
+                alert('Vui lòng nhập ít nhất một bước công việc.');
                 return;
             }
 
@@ -1077,7 +1153,14 @@
             document.getElementById('workflow-edit-id').value = wf.id;
             document.getElementById('workflow-name').value = wf.name;
             document.getElementById('workflow-desc').value = wf.description;
-            document.getElementById('workflow-tasks-list').value = wf.tasks.join('\n');
+
+            // Render existing steps with dependencies
+            const container = document.getElementById('workflow-steps-container');
+            container.innerHTML = '';
+            
+            wf.tasks.forEach(step => {
+                addNewWorkflowStepRow(step.uid, step.name, step.dependsOn[0] || '');
+            });
 
             document.getElementById('workflow-modal').classList.remove('hidden');
         }
@@ -1102,6 +1185,11 @@
 
             task.status = targetStatus;
             task.category = categoryZone;
+
+            if (targetStatus === 'done') {
+                checkAndUnlockTasks(task.documentNo);
+            }
+
             window.saveState();
         }
     </script>
@@ -1196,7 +1284,8 @@
         // --- DASHBOARD RENDER ---
         function renderDashboard() {
             const todayStr = new Date().toISOString().split('T')[0];
-            const activeTasks = window.state.tasks.filter(t => t.status !== 'done');
+            // Filter pending tasks from active dashboard count
+            const activeTasks = window.state.tasks.filter(t => t.status !== 'done' && t.status !== 'pending');
             
             document.getElementById('stat-tasks-today').innerText = activeTasks.length;
             
@@ -1204,7 +1293,7 @@
             document.getElementById('stat-orders-count').innerText = uniqueDocs;
             document.getElementById('stat-workflows-count').innerText = window.state.workflows.length;
 
-            const todayTasks = window.state.tasks.filter(t => t.duedate === todayStr);
+            const todayTasks = window.state.tasks.filter(t => t.duedate === todayStr && t.status !== 'pending');
             const completedToday = todayTasks.filter(t => t.status === 'done').length;
 
             const totalTasks = todayTasks.length;
@@ -1239,7 +1328,7 @@
             }
         }
 
-        // --- TASKS RENDER (SUPER FLAT COMPACT CARD & DRAG DROP) ---
+        // --- TASKS RENDER ---
         let currentDocFilter = 'all';
         let globalSearchQuery = '';
 
@@ -1263,20 +1352,6 @@
             select.value = currentDocFilter;
         }
 
-        // Drag events mappings
-        function handleDragStart(ev, taskId) {
-            ev.dataTransfer.setData("text/plain", taskId);
-            ev.currentTarget.classList.add('dragging-task');
-        }
-
-        function handleDragEnd(ev) {
-            ev.currentTarget.classList.remove('dragging-task');
-        }
-
-        function allowDrop(ev) {
-            ev.preventDefault();
-        }
-
         function renderTasks() {
             const panels = {
                 'Công việc': { todo: 'list-company-todo', doing: 'list-company-doing', done: 'list-company-done' },
@@ -1294,7 +1369,9 @@
                 });
             });
 
-            let filtered = window.state.tasks;
+            // Filter out pending tasks (hiding inactive steps in the sequence)
+            let filtered = window.state.tasks.filter(t => t.status !== 'pending');
+            
             if (globalSearchQuery) {
                 filtered = filtered.filter(t => 
                     t.name.toLowerCase().includes(globalSearchQuery) || 
@@ -1371,7 +1448,90 @@
             });
         }
 
-        // TASK MODAL LOGIC
+        // --- WORKFLOW MULTI-ROW BUILDER LOGIC ---
+        function getExistingStepsData() {
+            const rows = document.querySelectorAll('.workflow-step-row');
+            const data = [];
+            rows.forEach(r => {
+                const uid = r.getAttribute('data-step-uid');
+                const name = r.querySelector('.step-name-input').value.trim() || 'Bước chưa đặt tên';
+                data.push({ uid, name });
+            });
+            return data;
+        }
+
+        function refreshAllDependencyDropdowns() {
+            const steps = getExistingStepsData();
+            const rows = document.querySelectorAll('.workflow-step-row');
+            
+            rows.forEach(row => {
+                const currentUid = row.getAttribute('data-step-uid');
+                const select = row.querySelector('.step-dependency-select');
+                const previousVal = select.value;
+                
+                select.innerHTML = '<option value="">(Không phụ thuộc - Chạy ngay)</option>';
+                steps.forEach(step => {
+                    if (step.uid !== currentUid) { // cannot depend on itself
+                        select.innerHTML += `<option value="${step.uid}">Sau khi xong: ${step.name}</option>`;
+                    }
+                });
+                
+                select.value = previousVal;
+            });
+        }
+
+        window.addNewWorkflowStepRow = function(stepUid = '', nameVal = '', dependsOnVal = '') {
+            const uid = stepUid || 'step-' + Date.now() + '-' + Math.random().toString(36).substring(2,5);
+            const container = document.getElementById('workflow-steps-container');
+            
+            const row = document.createElement('div');
+            row.className = "workflow-step-row flex items-center space-x-2 bg-black/5 dark:bg-white/5 p-2 rounded border border-outline-variant dark:border-white/5";
+            row.setAttribute('data-step-uid', uid);
+            
+            row.innerHTML = `
+                <input type="text" value="${nameVal}" placeholder="Tên bước công việc..." required oninput="refreshAllDependencyDropdowns()" class="step-name-input flex-1 glass-input rounded px-2.5 py-1 text-xs focus:outline-none">
+                <select class="step-dependency-select w-44 border border-outline-variant dark:border-[#2d2d59] rounded px-2 py-1 text-xs bg-white dark:bg-[#0a0a1f] text-on-surface dark:text-[#f8fafc] focus:ring-primary">
+                    <option value="">(Không phụ thuộc - Chạy ngay)</option>
+                </select>
+                <button type="button" onclick="removeWorkflowStepRow(this)" class="text-error hover:text-red-400 p-1 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-sm">delete</span>
+                </button>
+            `;
+            
+            container.appendChild(row);
+            refreshAllDependencyDropdowns();
+            
+            if (dependsOnVal) {
+                row.querySelector('.step-dependency-select').value = dependsOnVal;
+            }
+        }
+
+        window.removeWorkflowStepRow = function(buttonEl) {
+            const row = buttonEl.closest('.workflow-step-row');
+            row.remove();
+            refreshAllDependencyDropdowns();
+        }
+
+        window.refreshAllDependencyDropdowns = refreshAllDependencyDropdowns;
+
+        function openAddWorkflowModal() {
+            document.getElementById('workflow-modal-title').innerText = "Tạo kịch bản quy trình mới";
+            document.getElementById('workflow-edit-id').value = '';
+            document.getElementById('workflow-name').value = '';
+            document.getElementById('workflow-desc').value = '';
+            document.getElementById('workflow-steps-container').innerHTML = '';
+            
+            // Add 1 default step row to start with
+            addNewWorkflowStepRow();
+            
+            document.getElementById('workflow-modal').classList.remove('hidden');
+        }
+
+        function closeWorkflowModal() {
+            document.getElementById('workflow-modal').classList.add('hidden');
+        }
+
+        // TASK MODAL FORM SWAP
         let currentTaskFormMode = 'single';
 
         function switchTaskFormMode(mode) {
@@ -1487,7 +1647,7 @@
                 cell.className = `bg-white dark:bg-[#0d0d21]/60 p-2 border-t border-r border-outline-variant dark:border-[#2d2d59] hover:bg-black/5 dark:hover:bg-white/5 transition-all flex flex-col justify-between cursor-pointer ${isToday ? 'ring-2 ring-primary ring-inset' : ''}`;
                 
                 const eventsCount = window.state.events.filter(e => e.date === dateStr).length;
-                const tasksCount = window.state.tasks.filter(t => t.duedate === dateStr).length;
+                const tasksCount = window.state.tasks.filter(t => t.duedate === dateStr && t.status !== 'pending').length;
 
                 cell.innerHTML = `
                     <div class="flex justify-between items-center">
@@ -1534,18 +1694,6 @@
             }
         }
 
-        function openAddEventModal() {
-            document.getElementById('event-date').value = selectedDateStr || new Date().toISOString().split('T')[0];
-            document.getElementById('event-name').value = '';
-            document.getElementById('event-time').value = '09:00';
-            document.getElementById('event-desc').value = '';
-            document.getElementById('event-modal').classList.remove('hidden');
-        }
-
-        function closeEventModal() {
-            document.getElementById('event-modal').classList.add('hidden');
-        }
-
         // --- 6. DIARY LOGIC ---
         let selectedDiaryId = null;
 
@@ -1588,8 +1736,8 @@
             container.innerHTML = '';
 
             window.state.workflows.forEach(wf => {
-                const usageCount = window.state.tasks.filter(t => t.workflowId === wf.id).length;
-                const uniqueBills = [...new Set(window.state.tasks.filter(t => t.workflowId === wf.id).map(t => t.documentNo))].filter(b => b).length;
+                const activeTasksRelated = window.state.tasks.filter(t => t.dependsOn.length > 0 || window.state.tasks.some(other => other.dependsOn.includes(t.id)));
+                const uniqueBills = [...new Set(window.state.tasks.filter(t => t.documentNo && t.id.includes('-step-')).map(t => t.documentNo))].length;
                 
                 container.innerHTML += `
                     <div class="glass-panel p-6 rounded-xl flex flex-col justify-between min-h-64 shadow-sm relative overflow-hidden">
@@ -1611,32 +1759,29 @@
                             <p class="text-xs text-on-surface-variant dark:text-[#94a3b8] mt-2 leading-relaxed">${wf.description}</p>
                             
                             <div class="mt-4 border-t border-outline-variant dark:border-white/5 pt-3 space-y-1">
-                                <h5 class="text-[9px] font-bold text-on-surface-variant dark:text-[#94a3b8] uppercase font-mono">DANH SÁCH TASK CON (${wf.tasks.length}):</h5>
-                                <div class="max-h-24 overflow-y-auto custom-scrollbar space-y-1">
-                                    ${wf.tasks.map(t => `<p class="text-xs text-on-surface dark:text-[#f8fafc] flex items-center space-x-1"><span class="w-1.5 h-1.5 rounded-full bg-primary block"></span><span>${t}</span></p>`).join('')}
+                                <h5 class="text-[9px] font-bold text-on-surface-variant dark:text-[#94a3b8] uppercase font-mono">DANH SÁCH BƯỚC VẬN HÀNH (${wf.tasks.length}):</h5>
+                                <div class="max-h-36 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+                                    ${wf.tasks.map(t => {
+                                        const depTask = wf.tasks.find(d => d.uid === t.dependsOn[0]);
+                                        const depLabel = depTask ? `<span class="text-[9px] text-primary bg-primary/10 border border-primary/20 px-1 py-0.2 rounded font-mono ml-2">Sau bước: ${depTask.name}</span>` : '';
+                                        return `<div class="text-xs text-on-surface dark:text-[#f8fafc] flex flex-col p-1 bg-black/5 dark:bg-white/5 rounded border border-outline-variant/30 dark:border-white/2"><p class="font-semibold flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-primary inline-block mr-1.5 shrink-0"></span>${t.name}</p>${depLabel ? `<p class="mt-1">${depLabel}</p>` : ''}</div>`;
+                                    }).join('')}
                                 </div>
                             </div>
                         </div>
                         <div class="mt-4 border-t border-outline-variant dark:border-white/5 pt-3 flex items-center justify-between">
-                            <span class="text-[9px] font-mono text-on-surface-variant dark:text-[#94a3b8] font-bold">ĐÃ ÁP DỤNG: ${uniqueBills} BILLS (${usageCount} TASKS)</span>
-                            <button onclick="applyWorkflowToNewOrder('${wf.id}')" class="bg-gradient-to-r from-primary to-primary-container text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all hover:brightness-110">SỬ DỤNG</button>
+                            <span class="text-[9px] font-mono text-on-surface-variant dark:text-[#94a3b8] font-bold">LÔ HÀNG ĐÃ ÁP DỤNG: ${uniqueBills} B/L</span>
+                            <button onclick="applyWorkflowToNewOrder('${wf.id}')" class="bg-gradient-to-r from-primary to-primary-container text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all hover:brightness-110">ÁP DỤNG</button>
                         </div>
                     </div>
                 `;
             });
         }
 
-        function openAddWorkflowModal() {
-            document.getElementById('workflow-modal-title').innerText = "Tạo kịch bản quy trình mới";
-            document.getElementById('workflow-edit-id').value = '';
-            document.getElementById('workflow-name').value = '';
-            document.getElementById('workflow-desc').value = '';
-            document.getElementById('workflow-tasks-list').value = '';
-            document.getElementById('workflow-modal').classList.remove('hidden');
-        }
-
-        function closeWorkflowModal() {
-            document.getElementById('workflow-modal').classList.add('hidden');
+        function applyWorkflowToNewOrder(wfId) {
+            openAddTaskModal();
+            switchTaskFormMode('workflow');
+            document.getElementById('task-workflow-id').value = wfId;
         }
 
         // --- 9. AI CHAT SYSTEM ---
@@ -1652,7 +1797,7 @@
                 let response = "Tôi đã tiếp nhận ý kiến của bạn. Tôi có thể tổng hợp báo cáo hoặc lọc các đầu việc theo số chứng từ của bạn.";
                 if(text.includes('Tóm tắt')) {
                     const total = window.state.tasks.length;
-                    const active = window.state.tasks.filter(t => t.status !== 'done').length;
+                    const active = window.state.tasks.filter(t => t.status !== 'done' && t.status !== 'pending').length;
                     const orders = [...new Set(window.state.tasks.filter(t => t.documentNo).map(t => t.documentNo))].filter(b => b);
                     response = `Tôi đã phân tích: Hệ thống đang quản lý ${total} công việc trên ${orders.length} lô vận đơn chứng từ khác nhau (${orders.join(', ')}). Hiện tại còn ${active} đầu việc đang cần xử lý. Khuyên bạn nên hoàn thành nốt quy trình của lô đang dở dang.`;
                 } else if (text.includes('tiến độ')) {
