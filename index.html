@@ -446,6 +446,9 @@
                                 <div class="bg-surface-container-low dark:bg-[#0a0a1f] py-2 text-center text-xs font-bold text-on-surface-variant">T5</div>
                                 <div class="bg-surface-container-low dark:bg-[#0a0a1f] py-2 text-center text-xs font-bold text-on-surface-variant">T6</div>
                                 <div class="bg-surface-container-low dark:bg-[#0a0a1f] py-2 text-center text-xs font-bold text-on-surface-variant">T7</div>
+                                
+                                <!-- Dynamic days grid container -->
+                                <div id="calendar-days-container" class="grid grid-cols-7 gap-px col-span-7 bg-outline-variant dark:bg-[#2d2d59] flex-1 min-h-0"></div>
                             </div>
                         </div>
 
@@ -1115,10 +1118,9 @@
             const monthsVi = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
             header.innerText = `${monthsVi[currentCalMonth]}, ${currentCalYear}`;
 
-            const container = document.getElementById('calendar-grid-container');
-            while (container.children.length > 7) {
-                container.removeChild(container.lastChild);
-            }
+            const container = document.getElementById('calendar-days-container');
+            if (!container) return;
+            container.innerHTML = '';
 
             const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay();
             const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
